@@ -1,0 +1,5 @@
+[
+  {"machine_id": "M1", "machine_type": "CNC", "location": "L1"},
+  {"machine_id": "M2", "machine_type": "Grinding", "location": "L2"},
+  {"machine_id": "M3", "machine_type": "Assembly", "location": "L3"}
+]

@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {"node_id": "L0"},
+    {"node_id": "L1"},
+    {"node_id": "L2"},
+    {"node_id": "L3"}
+  ],
+  "edges": [
+    {"from_node": "L0", "to_node": "L1", "distance": 10.0},
+    {"from_node": "L1", "to_node": "L2", "distance": 5.0},
+    {"from_node": "L2", "to_node": "L3", "distance": 8.0},
+    {"from_node": "L0", "to_node": "L3", "distance": 15.0}
+  ]
+}

@@ -1,18 +1,19 @@
-from app.llm.memory import memory
 from typing import List, Dict, Any
 
-def build_dispatch_prompt(state: dict) -> str:
+def build_dispatch_prompt(state: dict, strategic_experience: str = "") -> str:
     """
     将当前系统状态转换为面向 LLM 的专业调度提示词。
+    支持注入“反思经验”以指导决策。
     """
     time_now = state["time"]
 
-    # 1. 格式化作业信息
+    # ... (作业信息格式化逻辑保持不变)
     jobs_text = []
     for job in state["jobs"]:
         if job["finished"]:
             continue
         
+        # 获取当前待加工工序
         current_op = job["operations"][job["current_op_index"]]
         candidate_machines = [
             f"{cm['machine_id']}(耗时:{cm['process_time']})"
@@ -24,7 +25,7 @@ def build_dispatch_prompt(state: dict) -> str:
             f"当前工序={current_op['op_id']}, 可选机器=[{', '.join(candidate_machines)}]"
         )
 
-    # 2. 格式化机器信息
+    # 格式化机器信息
     machines_text = []
     for m in state["machines"]:
         machines_text.append(
@@ -32,7 +33,7 @@ def build_dispatch_prompt(state: dict) -> str:
             f"可用时间={m['available_time']}, 当前工件={m['current_job'] or '无'}"
         )
 
-    # 3. 格式化运输车信息
+    # 格式化运输车信息
     vehicles_text = []
     for v in state["vehicles"]:
         vehicles_text.append(
@@ -40,20 +41,19 @@ def build_dispatch_prompt(state: dict) -> str:
             f"速度={v['speed']}, 可用时间={v['available_time']}"
         )
 
-    # 4. 引入历史反思经验 (ReflecSched 核心：策略注入)
-    strategic_experience = memory.get_formatted_text()
-
-    # 5. 格式化优化目标
+    # 格式化优化目标
     obj = state["objective"]
     objective_text = f"类型={obj.get('type', '综合')}, 权重={obj.get('weight', 1.0)}"
 
+    # 经验总结部分
+    experience_section = ""
+    if strategic_experience:
+        experience_section = f"\n### 之前的调度反思（专家经验指导）:\n{strategic_experience}\n"
+
     prompt = f"""
-你是一位资深的柔性作业车间调度（FJSP）专家。你的任务是根据当前系统状态和以往的调度经验，给出一个最优的调度动作建议。
-
+你是一位资深的柔性作业车间调度（FJSP）专家。你的任务是根据当前系统状态，给出一个最优的调度动作建议。
+{experience_section}
 ### 当前系统时间: {time_now}
-
-### 已存储的调度策略经验（请优先参考）:
-{strategic_experience}
 
 ### 待处理工件（当前工序）:
 {chr(10).join(jobs_text) if jobs_text else "所有工件已完成"}

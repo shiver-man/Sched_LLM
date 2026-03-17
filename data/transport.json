@@ -1,0 +1,4 @@
+[
+  {"vehicle_id": "V1", "current_location": "L0", "speed": 1.0, "capacity": 1},
+  {"vehicle_id": "V2", "current_location": "L0", "speed": 1.2, "capacity": 1}
+]
