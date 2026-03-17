@@ -75,3 +75,66 @@ def build_reflection_prompt(trajectories):
 
 请输出中文分析。
 """.strip()
+
+
+def build_llm_plan_payload(plan_result: Dict[str, Any]) -> Dict[str, Any]:
+    all_rule_results = plan_result.get("all_rule_results", [])
+    comparison = [
+        {
+            "rule": item["rule"],
+            "metrics": item["metrics"],
+            "num_steps": len(item.get("plan", [])),
+        }
+        for item in all_rule_results
+    ]
+
+    return {
+        "task_type": "fjsp_production_transport_scheduling",
+        "objective": plan_result.get("objective", "makespan"),
+        "best_rule": plan_result.get("best_rule"),
+        "best_metrics": plan_result.get("best_metrics", {}),
+        "best_schedule_plan": plan_result.get("best_schedule_plan", []),
+        "rule_comparison": comparison,
+    }
+
+
+def build_llm_plan_brief(llm_payload: Dict[str, Any]) -> str:
+    best_metrics = llm_payload.get("best_metrics", {})
+    best_steps = llm_payload.get("best_schedule_plan", [])
+    rule_comparison = llm_payload.get("rule_comparison", [])
+
+    lines = [
+        "调度问题类型: 柔性作业车间生产-运输一体化调度",
+        f"优化目标: {llm_payload.get('objective', 'makespan')}",
+        f"推荐规则: {llm_payload.get('best_rule')}",
+        (
+            "最优指标: "
+            f"makespan={best_metrics.get('makespan')}, "
+            f"utilization={best_metrics.get('utilization')}, "
+            f"total_tardiness={best_metrics.get('total_tardiness')}, "
+            f"total_transport_time={best_metrics.get('total_transport_time')}, "
+            f"num_events={best_metrics.get('num_events')}"
+        ),
+        "最优调度步骤:"
+    ]
+
+    for step in best_steps:
+        lines.append(
+            f"Step {step['step']}: {step['job_id']}-{step['op_id']} -> {step['machine_id']}, "
+            f"vehicle={step.get('vehicle_id')}, "
+            f"start={step['start_time']}, finish={step['finish_time']}, "
+            f"transport_time={step.get('transport_time', 0)}"
+        )
+
+    lines.append("规则对比:")
+    for item in rule_comparison:
+        metrics = item.get("metrics", {})
+        lines.append(
+            f"{item['rule']}: makespan={metrics.get('makespan')}, "
+            f"utilization={metrics.get('utilization')}, "
+            f"total_tardiness={metrics.get('total_tardiness')}, "
+            f"total_transport_time={metrics.get('total_transport_time')}, "
+            f"steps={item.get('num_steps')}"
+        )
+
+    return "\n".join(lines)

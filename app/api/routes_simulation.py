@@ -5,7 +5,7 @@ from app.core.simulator import Simulator
 from app.core.scheduler import PDR
 from app.core.evaluator import Evaluator
 from app.llm.ollama_client import OllamaClient
-from app.llm.prompt_builder import build_reflection_prompt
+from app.llm.prompt_builder import build_reflection_prompt, build_llm_plan_payload, build_llm_plan_brief
 from app.config import settings
 
 router = APIRouter()
@@ -75,8 +75,7 @@ def generate_schedule_plan(req: SchedulePlanRequest):
 
         results = [_run_rule_plan(req, rule, req.max_steps) for rule in rules]
         best = _pick_best(results, req.objective)
-
-        return {
+        raw_result = {
             "status": "success",
             "objective": req.objective,
             "evaluated_rules": rules,
@@ -85,6 +84,10 @@ def generate_schedule_plan(req: SchedulePlanRequest):
             "best_schedule_plan": best["plan"],
             "all_rule_results": results,
         }
+        llm_payload = build_llm_plan_payload(raw_result)
+        raw_result["llm_readable_payload"] = llm_payload
+        raw_result["llm_readable_brief"] = build_llm_plan_brief(llm_payload)
+        return raw_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"调度方案生成失败: {str(e)}")
 
