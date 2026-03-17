@@ -1,74 +1,72 @@
-from typing import List, Dict, Any, Callable, Optional
-from app.core.dispatcher import Dispatcher
+from typing import Dict, Any, Callable, Optional
 import copy
+from app.core.dispatcher import Dispatcher
 
 class Simulator:
-    """
-    仿真引擎：负责运行完整的调度轨迹。
-    """
+    @staticmethod
+    def _release_resources(state: Dict[str, Any]) -> None:
+        for m in state["machines"]:
+            if m["status"] == "busy" and m["available_time"] <= state["time"]:
+                m["status"] = "idle"
+                m["current_job"] = None
+
+        for v in state["vehicles"]:
+            if v["status"] == "busy" and v["available_time"] <= state["time"]:
+                v["status"] = "idle"
+                v["current_task"] = None
+
+    @staticmethod
+    def _advance_time(state: Dict[str, Any]) -> bool:
+        future_times = []
+        future_times.extend(
+            j["release_time"]
+            for j in state["jobs"]
+            if not j["finished"] and j["release_time"] > state["time"]
+        )
+        future_times.extend(
+            j.get("ready_time", j["release_time"])
+            for j in state["jobs"]
+            if not j["finished"] and j.get("ready_time", j["release_time"]) > state["time"]
+        )
+        future_times.extend(
+            m["available_time"] for m in state["machines"] if m["available_time"] > state["time"]
+        )
+        future_times.extend(
+            v["available_time"] for v in state["vehicles"] if v["available_time"] > state["time"]
+        )
+
+        if not future_times:
+            return False
+
+        state["time"] = min(future_times)
+        Simulator._release_resources(state)
+        return True
 
     @staticmethod
     def run_simulation(
-        initial_state: Dict[str, Any], 
-        policy_func: Callable[[Dict[str, Any]], Optional[Dict[str, Any]]],
-        max_steps: int = 1000
+            initial_state: Dict[str, Any],
+            policy_func: Callable[[Dict[str, Any]], Optional[Dict[str, Any]]],
+            max_steps: int = 1000,
     ) -> Dict[str, Any]:
-        """
-        从初始状态开始运行仿真，直到所有工件完成。
-        
-        policy_func: 一个函数，接收 state 并返回一个 decision (Dict)。
-        """
         state = copy.deepcopy(initial_state)
         step = 0
-        
+
         while not all(j["finished"] for j in state["jobs"]) and step < max_steps:
-            # 1. 获取决策
+            Simulator._release_resources(state)
             decision = policy_func(state)
-            
+
             if decision:
-                # 2. 应用决策
                 state = Dispatcher.apply_decision(state, decision)
-                # 决策后，时间应该推进
-                # 在简单的事件驱动仿真中，我们通常将时间推进到下一个“可用时间”
-                # 这里我们简单地将时间推进到所有忙碌资源中最早完成的那个时间
-                busy_times = [m["available_time"] for m in state["machines"] if m["status"] == "busy"]
-                busy_times += [v["available_time"] for v in state["vehicles"] if v["status"] == "busy"]
-                
-                if busy_times:
-                    next_time = min(busy_times)
-                    if next_time > state["time"]:
-                        state["time"] = next_time
-                        # 释放已经完成任务的资源
-                        for m in state["machines"]:
-                            if m["status"] == "busy" and m["available_time"] <= state["time"]:
-                                m["status"] = "idle"
-                                m["current_job"] = None
-                        for v in state["vehicles"]:
-                            if v["status"] == "busy" and v["available_time"] <= state["time"]:
-                                v["status"] = "idle"
-                                v["current_task"] = None
             else:
-                # 如果没有可执行的动作，但还有工件没完成，说明需要等待资源释放或工件到达
-                # 寻找下一个时间点
-                possible_times = [j["release_time"] for j in state["jobs"] if not j["finished"] and j["release_time"] > state["time"]]
-                possible_times += [m["available_time"] for m in state["machines"] if m["status"] == "busy"]
-                possible_times += [v["available_time"] for v in state["vehicles"] if v["status"] == "busy"]
-                
-                if possible_times:
-                    state["time"] = min(possible_times)
-                    # 释放资源
-                    for m in state["machines"]:
-                        if m["status"] == "busy" and m["available_time"] <= state["time"]:
-                            m["status"] = "idle"
-                            m["current_job"] = None
-                    for v in state["vehicles"]:
-                        if v["status"] == "busy" and v["available_time"] <= state["time"]:
-                            v["status"] = "idle"
-                            v["current_task"] = None
-                else:
-                    # 无法继续推进，退出
+                moved = Simulator._advance_time(state)
+                if not moved:
                     break
-            
+
             step += 1
-            
+
+        final_finish = 0.0
+        if state["history"]:
+            final_finish = max(h["finish_time"] for h in state["history"])
+        state["time"] = max(state["time"], final_finish)
+        Simulator._release_resources(state)
         return state

@@ -1,4 +1,6 @@
-pydantic~=2.12.5
-networkx~=3.6.1
-requests~=2.32.5
-fastapi~=0.135.1
+fastapi>=0.115.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
+requests>=2.32.0
+networkx>=3.3
+python-dotenv>=1.0.1

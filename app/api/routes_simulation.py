@@ -1,71 +1,62 @@
 from fastapi import APIRouter, HTTPException
-from app.models.schema import ScheduleRequest
+from app.models.schema import SimulationRuleRequest, ScheduleRequest
 from app.models.state import build_initial_state
 from app.core.simulator import Simulator
 from app.core.scheduler import PDR
 from app.core.evaluator import Evaluator
 from app.llm.ollama_client import OllamaClient
 from app.llm.prompt_builder import build_reflection_prompt
-from typing import List, Dict, Any
+from app.config import settings
 
 router = APIRouter()
-ollama_client = OllamaClient(model="qwen2.5:7b")
+ollama_client = OllamaClient(model=settings.ollama_model)
 
 @router.post("/run-trajectory")
-def run_trajectory(req: ScheduleRequest, rule: str = "SPT"):
-    """
-    运行完整的调度轨迹并返回评估结果。
-    """
+def run_trajectory(req: SimulationRuleRequest):
     try:
-        # 1. 初始化状态
         initial_state = build_initial_state(req)
-        
-        # 2. 定义策略函数 (基于 PDR 规则)
+
         def pdr_policy(state):
-            return PDR.get_dispatch_action(state, rule=rule)
-            
-        # 3. 运行仿真
-        final_state = Simulator.run_simulation(initial_state, pdr_policy)
-        
-        # 4. 评估结果
+            return PDR.get_dispatch_action(state, rule=req.rule)
+
+        final_state = Simulator.run_simulation(initial_state, pdr_policy, max_steps=req.max_steps)
         metrics = Evaluator.evaluate(final_state)
-        
-        # 移除不可序列化的 graph
-        if "graph" in final_state:
-            del final_state["graph"]
-            
+
+        history_summary = [
+            {
+                "job_id": h["job_id"],
+                "op_id": h["op_id"],
+                "machine_id": h["machine_id"],
+                "vehicle_id": h.get("vehicle_id"),
+                "transport_time": h.get("transport_time", 0),
+                "start_time": h["start_time"],
+                "finish_time": h["finish_time"],
+            }
+            for h in final_state["history"]
+        ]
+
         return {
-            "rule": rule,
+            "rule": req.rule,
             "metrics": metrics,
-            "history_summary": [
-                f"{h['job_id']}-{h['op_id']} at {h['machine_id']} ({h['start_time']} to {h['finish_time']})"
-                for h in final_state["history"][:10] # 只返回前10条摘要
-            ]
+            "history_summary": history_summary,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/reflect")
 def reflect_on_trajectories(req: ScheduleRequest):
-    """
-    ReflecSched 的全局反思接口：对比不同规则的轨迹并生成高层策略。
-    """
     try:
-        # 1. 运行多个规则的仿真
         trajectories = []
         for rule in ["SPT", "FIFO", "MWKR"]:
-            traj = run_trajectory(req, rule)
-            trajectories.append(traj)
-            
-        # 2. 构建反思提示词
+            tmp_req = SimulationRuleRequest(**req.model_dump(), rule=rule, max_steps=1000)
+            result = run_trajectory(tmp_req)
+            trajectories.append(result)
+
         prompt = build_reflection_prompt(trajectories)
-        
-        # 3. 调用 LLM 进行反思分析
         reflection_result = ollama_client.generate(prompt)
-        
         return {
             "trajectories": trajectories,
-            "reflection": reflection_result
+            "reflection": reflection_result,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"反思失败: {str(e)}")

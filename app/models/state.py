@@ -1,76 +1,93 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import networkx as nx
 from app.models.schema import ScheduleRequest
 
-
-def build_layout_graph(layout) -> nx.Graph:
-    graph = nx.Graph()
+def build_graph(layout) -> nx.Graph:
+    graph = nx.DiGraph() if layout.directed else nx.Graph()
     for node in layout.nodes:
-        graph.add_node(node.node_id)
+        graph.add_node(node)
     for edge in layout.edges:
         graph.add_edge(edge.from_node, edge.to_node, weight=edge.distance)
     return graph
 
-
 def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
-    graph = build_layout_graph(req.layout)
+    graph = build_graph(req.layout)
 
-    jobs_state = []
+    jobs = []
     for job in req.jobs:
-        jobs_state.append({
-            "job_id": job.job_id,
-            "release_time": job.release_time,
-            "due_time": job.due_time,
-            "current_op_index": 0,
-            "finished": False,
-            "operations": [
-                {
-                    "op_id": op.op_id,
-                    "candidate_machines": [
-                        {
-                            "machine_id": cm.machine_id,
-                            "process_time": cm.process_time
-                        }
-                        for cm in op.candidate_machines
-                    ]
-                }
-                for op in job.operations
-            ]
-        })
-
-    machines_state = []
+        jobs.append(
+            {
+                "job_id": job.job_id,
+                "operations": [
+                    {
+                        "op_id": op.op_id,
+                        "source_location": op.source_location,
+                        "candidate_machines": [
+                            {
+                                "machine_id": cm.machine_id,
+                                "process_time": cm.process_time,
+                            }
+                            for cm in op.candidate_machines
+                        ],
+                    }
+                    for op in job.operations
+                ],
+                "release_time": job.release_time,
+                "due_time": job.due_time,
+                "initial_location": job.initial_location,
+                "current_location": job.initial_location,
+                "current_op_index": 0,
+                "finished": False,
+                "ready_time": job.release_time,
+            }
+        )
+    machines = []
     for machine in req.machines:
-        machines_state.append({
-            "machine_id": machine.machine_id,
-            "machine_type": machine.machine_type,
-            "location": machine.location,
-            "status": "idle",
-            "available_time": req.current_time,
-            "current_job": None
-        })
+        machines.append(
+            {
+                "machine_id": machine.machine_id,
+                "machine_type": machine.machine_type,
+                "location": machine.location,
+                "status": machine.status,
+                "available_time": machine.available_time,
+                "current_job": machine.current_job,
+            }
+        )
 
-    vehicles_state = []
+    vehicles = []
     for vehicle in req.vehicles:
-        vehicles_state.append({
-            "vehicle_id": vehicle.vehicle_id,
-            "current_location": vehicle.current_location,
-            "speed": vehicle.speed,
-            "capacity": vehicle.capacity,
-            "status": "idle",
-            "available_time": req.current_time,
-            "current_task": None
-        })
+        vehicles.append(
+            {
+                "vehicle_id": vehicle.vehicle_id,
+                "current_location": vehicle.current_location,
+                "speed": vehicle.speed,
+                "capacity": vehicle.capacity,
+                "load_unload_time": vehicle.load_unload_time,
+                "status": vehicle.status,
+                "available_time": vehicle.available_time,
+                "current_task": vehicle.current_task,
+            }
+        )
 
-    state = {
+    return {
         "time": req.current_time,
-        "jobs": jobs_state,
-        "machines": machines_state,
-        "vehicles": vehicles_state,
-        "objective": req.objective.model_dump(),
         "graph": graph,
-        "dispatchable_ops": [],
-        "transport_tasks": [],
-        "history": []
+        "jobs": jobs,
+        "machines": machines,
+        "vehicles": vehicles,
+        "history": [],
+        "strategic_experience": req.strategic_experience,
+        "metadata": req.metadata or {},
     }
 
-    return state
+def get_dispatchable_jobs(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    result = []
+    for job in state["jobs"]:
+        if job["finished"]:
+            continue
+        if state["time"] < job["release_time"]:
+            continue
+        if state["time"] < job.get("ready_time", job["release_time"]):
+            continue
+        result.append(job)
+    return result

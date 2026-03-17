@@ -1,90 +1,159 @@
 from typing import Dict, Any, Optional
 import networkx as nx
 
+
 class Dispatcher:
-    """
-    调度执行器：负责将 LLM 的调度决策应用到系统状态中。
-    """
-    
+    @staticmethod
+    def _find_job(state: Dict[str, Any], job_id: str) -> Optional[Dict[str, Any]]:
+        return next((j for j in state["jobs"] if j["job_id"] == job_id), None)
+
+    @staticmethod
+    def _find_machine(state: Dict[str, Any], machine_id: str) -> Optional[Dict[str, Any]]:
+        return next((m for m in state["machines"] if m["machine_id"] == machine_id), None)
+
+    @staticmethod
+    def _find_vehicle(state: Dict[str, Any], vehicle_id: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not vehicle_id:
+            return None
+        return next((v for v in state["vehicles"] if v["vehicle_id"] == vehicle_id), None)
+
+    @staticmethod
+    def validate_decision(state: Dict[str, Any], decision: Dict[str, Any]) -> None:
+        job = Dispatcher._find_job(state, decision.get("job_id"))
+        machine = Dispatcher._find_machine(state, decision.get("machine_id"))
+        vehicle = Dispatcher._find_vehicle(state, decision.get("vehicle_id"))
+
+        if job is None:
+            raise ValueError("job_id 不存在")
+        if machine is None:
+            raise ValueError("machine_id 不存在")
+        if job["finished"]:
+            raise ValueError("该工件已经完成")
+        if state["time"] < job["release_time"]:
+            raise ValueError("该工件尚未释放")
+        if state["time"] < job.get("ready_time", job["release_time"]):
+            raise ValueError("该工件尚未准备好")
+        if machine["status"] != "idle":
+            raise ValueError("目标机器当前非空闲")
+
+        current_op = job["operations"][job["current_op_index"]]
+        cm = next(
+            (x for x in current_op["candidate_machines"] if x["machine_id"] == machine["machine_id"]),
+            None,
+        )
+        if cm is None:
+            raise ValueError("目标机器不在当前工序的候选机器列表中")
+
+        if job["current_location"] != machine["location"]:
+            if vehicle is None:
+                raise ValueError("需要运输，但 vehicle_id 为空")
+            if vehicle["status"] != "idle":
+                raise ValueError("目标车辆当前非空闲")
+
+    @staticmethod
+    def _calc_transport(state: Dict[str, Any], from_loc: str, to_loc: str, vehicle: Dict[str, Any]):
+        if from_loc == to_loc:
+            return 0.0, 0.0, 0.0
+
+        graph = state["graph"]
+
+        reposition_dist = 0.0
+        if vehicle["current_location"] != from_loc:
+            reposition_dist = nx.shortest_path_length(
+                graph,
+                vehicle["current_location"],
+                from_loc,
+                weight="weight",
+            )
+
+        carrying_dist = nx.shortest_path_length(
+            graph,
+            from_loc,
+            to_loc,
+            weight="weight",
+        )
+
+        reposition_time = reposition_dist / vehicle["speed"]
+        carrying_time = carrying_dist / vehicle["speed"]
+        load_unload_time = vehicle.get("load_unload_time", 0.0)
+        total_time = reposition_time + carrying_time + load_unload_time
+
+        return reposition_time, carrying_time, total_time
+
     @staticmethod
     def apply_decision(state: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        应用单次调度决策。
-        
-        decision 格式示例:
-        {
-          "job_id": "J1",
-          "op_id": "O11",
-          "machine_id": "M1",
-          "vehicle_id": "V1",
-          "reason": "..."
-        }
-        """
-        job_id = decision.get("job_id")
-        machine_id = decision.get("machine_id")
-        vehicle_id = decision.get("vehicle_id")
-        
-        # 1. 找到对应的工件、机器和运输车对象
-        job = next((j for j in state["jobs"] if j["job_id"] == job_id), None)
-        machine = next((m for m in state["machines"] if m["machine_id"] == machine_id), None)
-        vehicle = next((v for v in state["vehicles"] if v["vehicle_id"] == vehicle_id), None) if vehicle_id else None
-        
-        if not job or not machine:
-            return state # 或者抛出异常
-            
-        # 2. 获取当前工序信息
-        current_op = job["operations"][job["current_op_index"]]
-        process_time = next(
-            (cm["process_time"] for cm in current_op["candidate_machines"] if cm["machine_id"] == machine_id), 
-            10.0 # 默认值
-        )
-        
-        # 3. 计算时间（简化版）
+        Dispatcher.validate_decision(state, decision)
+
         current_time = state["time"]
-        
-        # 如果需要运输
+        job = Dispatcher._find_job(state, decision["job_id"])
+        machine = Dispatcher._find_machine(state, decision["machine_id"])
+        vehicle = Dispatcher._find_vehicle(state, decision.get("vehicle_id"))
+
+        current_op = job["operations"][job["current_op_index"]]
+        cm = next(
+            x for x in current_op["candidate_machines"]
+            if x["machine_id"] == machine["machine_id"]
+        )
+        process_time = cm["process_time"]
+
         transport_time = 0.0
-        if vehicle:
-            # 简单的距离计算（如果图中有权重）
-            try:
-                distance = nx.shortest_path_length(state["graph"], vehicle["current_location"], machine["location"], weight='weight')
-                transport_time = distance / vehicle["speed"]
-            except:
-                transport_time = 5.0 # 默认运输时间
-            
-            # 更新运输车状态
+        reposition_time = 0.0
+        carrying_time = 0.0
+        transport_start = current_time
+        transport_finish = current_time
+
+        if job["current_location"] != machine["location"]:
+            reposition_time, carrying_time, transport_time = Dispatcher._calc_transport(
+                state,
+                job["current_location"],
+                machine["location"],
+                vehicle,
+            )
+            transport_start = max(current_time, vehicle["available_time"])
+            transport_finish = transport_start + transport_time
+
             vehicle["status"] = "busy"
+            vehicle["available_time"] = transport_finish
             vehicle["current_location"] = machine["location"]
-            vehicle["available_time"] = current_time + transport_time
-            
-        # 4. 更新机器和工件状态
-        start_time = max(current_time + transport_time, job["release_time"], machine["available_time"])
+            vehicle["current_task"] = f"{job['job_id']}->{machine['machine_id']}"
+
+            job["current_location"] = machine["location"]
+
+        start_time = max(
+            current_time,
+            transport_finish,
+            machine["available_time"],
+            job.get("ready_time", job["release_time"]),
+        )
         finish_time = start_time + process_time
-        
+
         machine["status"] = "busy"
         machine["available_time"] = finish_time
-        machine["current_job"] = job_id
-        
-        # 工件进阶到下一工序
+        machine["current_job"] = job["job_id"]
+
         job["current_op_index"] += 1
+        job["ready_time"] = finish_time
+
         if job["current_op_index"] >= len(job["operations"]):
             job["finished"] = True
-            
-        # 5. 记录历史
-        state["history"].append({
-            "time": current_time,
-            "event": "dispatch",
-            "job_id": job_id,
-            "op_id": current_op["op_id"],
-            "machine_id": machine_id,
-            "vehicle_id": vehicle_id,
-            "start_time": start_time,
-            "finish_time": finish_time,
-            "reason": decision.get("reason", "")
-        })
-        
-        # 更新全局系统时间（推移到决策执行开始或结束，视具体逻辑而定）
-        # 这里为了演示，假设系统时间推进到该决策产生的完工时间的一小部分，或者保持不变由仿真引擎控制
-        # state["time"] = start_time 
-        
+
+        state["history"].append(
+            {
+                "time": current_time,
+                "event": "dispatch",
+                "job_id": job["job_id"],
+                "op_id": current_op["op_id"],
+                "machine_id": machine["machine_id"],
+                "vehicle_id": vehicle["vehicle_id"] if vehicle else None,
+                "transport_start": transport_start,
+                "transport_finish": transport_finish,
+                "reposition_time": reposition_time,
+                "carrying_time": carrying_time,
+                "transport_time": transport_time,
+                "start_time": start_time,
+                "finish_time": finish_time,
+                "reason": decision.get("reason", ""),
+            }
+        )
+
         return state
