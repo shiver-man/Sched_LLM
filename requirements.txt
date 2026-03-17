@@ -1,0 +1,4 @@
+pydantic~=2.12.5
+networkx~=3.6.1
+requests~=2.32.5
+fastapi~=0.135.1
