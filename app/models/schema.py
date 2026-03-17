@@ -1,60 +1,51 @@
-from typing import List, Dict, Optional
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
+from typing import List, Optional
 
 class CandidateMachine(BaseModel):
     machine_id: str
-    process_time: int
+    process_time: float
 
-
-class OperationInput(BaseModel):
+class Operation(BaseModel):
     op_id: str
     candidate_machines: List[CandidateMachine]
 
-
-class JobInput(BaseModel):
+class Job(BaseModel):
     job_id: str
-    operations: List[OperationInput]
-    release_time: int = 0
-    due_time: Optional[int] = None
+    release_time: float
+    due_time: float
+    operations: List[Operation]
 
-
-class MachineInput(BaseModel):
+class Machine(BaseModel):
     machine_id: str
-    machine_type: Optional[str] = None
+    machine_type: str
     location: str
-    status: str = "idle"
 
-
-class VehicleInput(BaseModel):
+class Vehicle(BaseModel):
     vehicle_id: str
     current_location: str
-    speed: float = 1.0
-    capacity: int = 1
-    status: str = "idle"
+    speed: float
+    capacity: int
 
+class LayoutNode(BaseModel):
+    node_id: str
 
-class EdgeInput(BaseModel):
+class LayoutEdge(BaseModel):
     from_node: str
     to_node: str
     distance: float
 
+class Layout(BaseModel):
+    nodes: List[LayoutNode]
+    edges: List[LayoutEdge]
 
-class LayoutInput(BaseModel):
-    nodes: List[str]
-    edges: List[EdgeInput]
-
-
-class ObjectiveInput(BaseModel):
-    minimize_makespan: bool = True
-    minimize_transport_time: bool = True
-    minimize_tardiness: bool = False
-
+class Objective(BaseModel):
+    type: str
+    weight: float
 
 class ScheduleRequest(BaseModel):
-    jobs: List[JobInput]
-    machines: List[MachineInput]
-    vehicles: List[VehicleInput]
-    layout: LayoutInput
-    objective: ObjectiveInput = Field(default_factory=ObjectiveInput)
-    current_time: int = 0
+    jobs: List[Job]
+    machines: List[Machine]
+    vehicles: List[Vehicle]
+    layout: Layout
+    current_time: float
+    objective: Objective

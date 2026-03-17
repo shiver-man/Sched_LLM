@@ -6,7 +6,7 @@ from app.models.schema import ScheduleRequest
 def build_layout_graph(layout) -> nx.Graph:
     graph = nx.Graph()
     for node in layout.nodes:
-        graph.add_node(node)
+        graph.add_node(node.node_id)
     for edge in layout.edges:
         graph.add_edge(edge.from_node, edge.to_node, weight=edge.distance)
     return graph
@@ -44,7 +44,7 @@ def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
             "machine_id": machine.machine_id,
             "machine_type": machine.machine_type,
             "location": machine.location,
-            "status": machine.status,
+            "status": "idle",
             "available_time": req.current_time,
             "current_job": None
         })
@@ -56,7 +56,7 @@ def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
             "current_location": vehicle.current_location,
             "speed": vehicle.speed,
             "capacity": vehicle.capacity,
-            "status": vehicle.status,
+            "status": "idle",
             "available_time": req.current_time,
             "current_task": None
         })
