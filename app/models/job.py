@@ -18,4 +18,4 @@ class Job(BaseModel):
     operations: List[Operation]
     release_time: float = Field(0.0, ge=0)
     due_time: float = Field(10**9, ge=0)
-    initial_location: str = Field(..., description="工件初始位置")
+    initial_location: Optional[str] = Field(None, description="工件初始位置")

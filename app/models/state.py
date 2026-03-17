@@ -15,6 +15,14 @@ def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
 
     jobs = []
     for job in req.jobs:
+        initial_location = job.initial_location
+        if not initial_location and job.operations:
+            initial_location = job.operations[0].source_location
+        if not initial_location and req.layout.nodes:
+            initial_location = req.layout.nodes[0]
+        if not initial_location:
+            raise ValueError(f"工件 {job.job_id} 缺少 initial_location，且无法从布局推断")
+
         jobs.append(
             {
                 "job_id": job.job_id,
@@ -34,8 +42,8 @@ def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
                 ],
                 "release_time": job.release_time,
                 "due_time": job.due_time,
-                "initial_location": job.initial_location,
-                "current_location": job.initial_location,
+                "initial_location": initial_location,
+                "current_location": initial_location,
                 "current_op_index": 0,
                 "finished": False,
                 "ready_time": job.release_time,

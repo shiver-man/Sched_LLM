@@ -4,18 +4,51 @@ import networkx as nx
 
 class Dispatcher:
     @staticmethod
+    def _normalize_id(value: Any) -> str:
+        if value is None:
+            return ""
+        text = str(value).strip().strip("\"'`")
+        text = text.strip("，,。.;；:：")
+        return text.casefold()
+
+    @staticmethod
     def _find_job(state: Dict[str, Any], job_id: str) -> Optional[Dict[str, Any]]:
-        return next((j for j in state["jobs"] if j["job_id"] == job_id), None)
+        if job_id is None:
+            return None
+        direct = next((j for j in state["jobs"] if j["job_id"] == job_id), None)
+        if direct is not None:
+            return direct
+        normalized = Dispatcher._normalize_id(job_id)
+        return next(
+            (j for j in state["jobs"] if Dispatcher._normalize_id(j["job_id"]) == normalized),
+            None,
+        )
 
     @staticmethod
     def _find_machine(state: Dict[str, Any], machine_id: str) -> Optional[Dict[str, Any]]:
-        return next((m for m in state["machines"] if m["machine_id"] == machine_id), None)
+        if machine_id is None:
+            return None
+        direct = next((m for m in state["machines"] if m["machine_id"] == machine_id), None)
+        if direct is not None:
+            return direct
+        normalized = Dispatcher._normalize_id(machine_id)
+        return next(
+            (m for m in state["machines"] if Dispatcher._normalize_id(m["machine_id"]) == normalized),
+            None,
+        )
 
     @staticmethod
     def _find_vehicle(state: Dict[str, Any], vehicle_id: Optional[str]) -> Optional[Dict[str, Any]]:
         if not vehicle_id:
             return None
-        return next((v for v in state["vehicles"] if v["vehicle_id"] == vehicle_id), None)
+        direct = next((v for v in state["vehicles"] if v["vehicle_id"] == vehicle_id), None)
+        if direct is not None:
+            return direct
+        normalized = Dispatcher._normalize_id(vehicle_id)
+        return next(
+            (v for v in state["vehicles"] if Dispatcher._normalize_id(v["vehicle_id"]) == normalized),
+            None,
+        )
 
     @staticmethod
     def validate_decision(state: Dict[str, Any], decision: Dict[str, Any]) -> None:

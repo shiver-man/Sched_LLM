@@ -1,57 +1,32 @@
 from typing import Dict, Any, List
 from app.models.state import get_dispatchable_jobs
 
-def _summarize_jobs(state: Dict[str, Any]) -> List[Dict[str, Any]]:
-    rows = []
+def _summarize_jobs(state: Dict[str, Any]) -> str:
+    lines = []
     for job in state["jobs"]:
         if job["finished"]:
-            rows.append(
-                {
-                    "job_id": job["job_id"],
-                    "status": "finished",
-                }
-            )
+            lines.append(f"工件 {job['job_id']} (已完成)")
             continue
         op = job["operations"][job["current_op_index"]]
-        rows.append(
-            {
-                "job_id": job["job_id"],
-                "current_op": op["op_id"],
-                "current_location": job["current_location"],
-                "release_time": job["release_time"],
-                "ready_time": job.get("ready_time", job["release_time"]),
-                "due_time": job["due_time"],
-                "candidate_machines": op["candidate_machines"],
-            }
+        lines.append(
+            f"工件 {job['job_id']} (释放:{job['release_time']}, 准备就绪:{job.get('ready_time', 0.0)}, 交期:{job['due_time']}, 当前位置:{job['current_location']}) -> 工序 {op['op_id']} (候选机器:{[cm['machine_id'] for cm in op['candidate_machines']]})"
         )
-    return rows
+    return "\n".join(lines)
 
-def _summarize_machines(state: Dict[str, Any]) -> List[Dict[str, Any]]:
-    return [
-        {
-            "machine_id": m["machine_id"],
-            "location": m["location"],
-            "status": m["status"],
-            "available_time": m["available_time"],
-            "current_job": m["current_job"],
-        }
-        for m in state["machines"]
-    ]
+def _summarize_machines(state: Dict[str, Any]) -> str:
+    lines = []
+    for m in state["machines"]:
+        lines.append(f"机器 {m['machine_id']} (位置:{m['location']}, 状态:{m['status']}, 可用时间:{m['available_time']})")
+    return "\n".join(lines)
 
-def _summarize_vehicles(state: Dict[str, Any]) -> List[Dict[str, Any]]:
-    return [
-        {
-            "vehicle_id": v["vehicle_id"],
-            "current_location": v["current_location"],
-            "status": v["status"],
-            "available_time": v["available_time"],
-            "speed": v["speed"],
-        }
-        for v in state["vehicles"]
-    ]
+def _summarize_vehicles(state: Dict[str, Any]) -> str:
+    lines = []
+    for v in state["vehicles"]:
+        lines.append(f"车辆 {v['vehicle_id']} (位置:{v['current_location']}, 状态:{v['status']}, 可用时间:{v['available_time']})")
+    return "\n".join(lines)
 
 def build_dispatch_prompt(state: Dict[str, Any], strategic_experience: str = "") -> str:
-    dispatchable = get_dispatchable_jobs(state)
+    dispatchable = [j["job_id"] for j in get_dispatchable_jobs(state)]
     strategic_experience = strategic_experience or state.get("strategic_experience", "")
 
     return f"""
@@ -61,9 +36,10 @@ def build_dispatch_prompt(state: Dict[str, Any], strategic_experience: str = "")
 
 重要规则：
 1. 只能从当前未完成且已释放、已准备好的工件中选择。
-2. machine_id 必须来自该工序的 candidate_machines。
-3. 如果工件当前位置和目标机器位置不同，优先分配空闲车辆；如果没有车辆，也可以返回 vehicle_id 为 null。
-4. 你的输出必须是 JSON，格式如下：
+2. 必须且只能从以下列表中选择一个 job_id: {dispatchable}
+3. machine_id 必须来自所选工件当前工序的 candidate_machines 列表。
+4. 如果工件当前位置和目标机器位置不同，必须分配一个空闲车辆；如果没有空闲车辆，也可以返回 vehicle_id 为 null，但之后该任务会被延迟。
+5. 你的输出必须是 JSON，格式如下：
 {{
   "job_id": "J1",
   "op_id": "O11",
@@ -71,14 +47,11 @@ def build_dispatch_prompt(state: Dict[str, Any], strategic_experience: str = "")
   "vehicle_id": "V1",
   "reason": "简要说明为什么这样调度"
 }}
-5. 不要输出 markdown，不要输出代码块，只输出 JSON。
+6. 不要输出 markdown，不要输出代码块，只输出 JSON。
 
 当前时刻：{state['time']}
 
-可调度工件：
-{dispatchable}
-
-全部工件摘要：
+全部工件详情：
 {_summarize_jobs(state)}
 
 机器状态：

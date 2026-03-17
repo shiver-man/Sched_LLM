@@ -2,21 +2,18 @@ import json
 import os
 import sys
 
-# 将项目根目录添加到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.models.schema import ScheduleRequest, Job, Machine, Vehicle, Layout, Objective
+from app.models.schema import SchedulePlanRequest
 from app.models.state import build_initial_state
 from app.core.simulator import Simulator
 from app.core.scheduler import PDR
 from app.core.evaluator import Evaluator
-from app.llm.ollama_client import OllamaClient
-from app.llm.prompt_builder import build_dispatch_prompt, build_reflection_prompt
-from app.llm.response_parser import parse_llm_response
 
-def load_data():
+
+def load_data() -> SchedulePlanRequest:
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-    
+
     with open(os.path.join(data_dir, "jobs.json"), "r") as f:
         jobs = json.load(f)
     with open(os.path.join(data_dir, "machines.json"), "r") as f:
@@ -25,77 +22,66 @@ def load_data():
         vehicles = json.load(f)
     with open(os.path.join(data_dir, "layout.json"), "r") as f:
         layout = json.load(f)
-        
-    req = ScheduleRequest(
+
+    req = SchedulePlanRequest(
         jobs=jobs,
         machines=machines,
         vehicles=vehicles,
         layout=layout,
         current_time=0.0,
-        objective=Objective(type="makespan", weight=1.0)
+        objective="makespan",
+        rules=["SPT", "FIFO", "MWKR"],
+        max_steps=1000,
     )
     return req
 
+
+def run_rule(req: SchedulePlanRequest, rule: str):
+    def pdr_policy(state):
+        return PDR.get_dispatch_action(state, rule=rule)
+
+    final_state = Simulator.run_simulation(build_initial_state(req), pdr_policy, max_steps=req.max_steps)
+    metrics = Evaluator.evaluate(final_state)
+    plan = [
+        {
+            "step": idx + 1,
+            "job_id": h["job_id"],
+            "op_id": h["op_id"],
+            "machine_id": h["machine_id"],
+            "vehicle_id": h.get("vehicle_id"),
+            "start_time": h["start_time"],
+            "finish_time": h["finish_time"],
+            "transport_time": h.get("transport_time", 0),
+        }
+        for idx, h in enumerate(final_state["history"])
+    ]
+    return {"rule": rule, "metrics": metrics, "plan": plan}
+
+
+def pick_best(results, objective: str):
+    objective = objective.lower()
+    if objective == "utilization":
+        return max(results, key=lambda x: x["metrics"]["utilization"])
+    if objective == "total_tardiness":
+        return min(results, key=lambda x: x["metrics"]["total_tardiness"])
+    if objective == "total_transport_time":
+        return min(results, key=lambda x: x["metrics"]["total_transport_time"])
+    return min(results, key=lambda x: x["metrics"]["makespan"])
+
+
 def run_baseline_experiment():
-    print("=== Step 1: Loading Data ===")
     req = load_data()
-    initial_state = build_initial_state(req)
-    
-    ollama = OllamaClient(model="qwen2.5:7b")
+    results = [run_rule(req, rule.upper()) for rule in req.rules]
+    best = pick_best(results, req.objective)
 
-    print("\n=== Step 2: Generating Trajectories with PDR Rules ===")
-    rules = ["SPT", "FIFO", "MWKR"]
-    trajectories = []
-    
-    for rule in rules:
-        print(f"Running simulation with rule: {rule}...")
-        # 定义 PDR 策略函数
-        def pdr_policy(state):
-            return PDR.get_dispatch_action(state, rule=rule)
-            
-        final_state = Simulator.run_simulation(initial_state, pdr_policy)
-        metrics = Evaluator.evaluate(final_state)
-        
-        trajectories.append({
-            "rule": rule,
-            "metrics": metrics,
-            "history_summary": [f"{h['job_id']}-{h['op_id']}@{h['machine_id']}" for h in final_state["history"][:5]]
-        })
-        print(f"Result for {rule}: Makespan={metrics['makespan']}, Utilization={metrics['utilization']}")
-
-    print("\n=== Step 3: Hierarchical Reflection (LLM Analysis) ===")
-    reflection_prompt = build_reflection_prompt(trajectories)
-    print("Calling LLM for reflection...")
-    strategic_experience = ollama.generate(reflection_prompt)
-    print("\n[Strategic Experience from LLM]:")
-    print(strategic_experience)
-
-    print("\n=== Step 4: Final Scheduling with LLM Decision + Reflection ===")
-    # 这里的策略函数调用 LLM，并传入 reflection 得到的经验
-    def llm_policy(state):
-        # 只有在有可用资源时才调用 LLM，否则返回 None 让仿真器推进时间
-        available_machines = [m for m in state["machines"] if m["status"] == "idle"]
-        dispatchable_jobs = [j for j in state["jobs"] if not j["finished"] and state["time"] >= j["release_time"]]
-        
-        if not available_machines or not dispatchable_jobs:
-            return None
-            
-        prompt = build_dispatch_prompt(state, strategic_experience=strategic_experience)
-        response_text = ollama.generate(prompt)
-        try:
-            return parse_llm_response(response_text)
-        except:
-            # 备选方案：如果 LLM 出错，降级到 SPT
-            return PDR.get_dispatch_action(state, rule="SPT")
-
-    print("Running simulation guided by LLM...")
-    llm_final_state = Simulator.run_simulation(initial_state, llm_policy)
-    llm_metrics = Evaluator.evaluate(llm_final_state)
-    
-    print("\n=== Final Results ===")
-    for t in trajectories:
-        print(f"Rule {t['rule']}: Makespan = {t['metrics']['makespan']}")
-    print(f"LLM + Reflection: Makespan = {llm_metrics['makespan']}")
+    output = {
+        "objective": req.objective,
+        "best_rule": best["rule"],
+        "best_metrics": best["metrics"],
+        "best_schedule_plan": best["plan"],
+        "all_rule_results": results,
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
     run_baseline_experiment()
