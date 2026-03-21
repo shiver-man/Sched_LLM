@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from app.config import settings
-from app.api.routes_schedule import router as schedule_router
 from app.api.routes_simulation import router as simulation_router
 
 app = FastAPI(
@@ -9,7 +8,6 @@ app = FastAPI(
     description="用户参数驱动的生产-运输一体化柔性作业车间调度系统",
 )
 
-app.include_router(schedule_router, prefix="/schedule", tags=["schedule"])
 app.include_router(simulation_router, prefix="/simulation", tags=["simulation"])
 
 

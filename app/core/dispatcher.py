@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 import networkx as nx
+from app.core.transport_scheduler import TransportScheduler
 
 
 class Dispatcher:
@@ -78,9 +79,7 @@ class Dispatcher:
             raise ValueError("目标机器不在当前工序的候选机器列表中")
 
         if job["current_location"] != machine["location"]:
-            if vehicle is None:
-                raise ValueError("需要运输，但 vehicle_id 为空")
-            if vehicle["status"] != "idle":
+            if vehicle is not None and vehicle["status"] != "idle":
                 raise ValueError("目标车辆当前非空闲")
 
     @staticmethod
@@ -115,12 +114,13 @@ class Dispatcher:
 
     @staticmethod
     def apply_decision(state: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
-        Dispatcher.validate_decision(state, decision)
-
         current_time = state["time"]
         job = Dispatcher._find_job(state, decision["job_id"])
         machine = Dispatcher._find_machine(state, decision["machine_id"])
         vehicle = Dispatcher._find_vehicle(state, decision.get("vehicle_id"))
+
+        if job is None or machine is None:
+            raise ValueError("调度对象不存在")
 
         current_op = job["operations"][job["current_op_index"]]
         cm = next(
@@ -129,6 +129,9 @@ class Dispatcher:
         )
         process_time = cm["process_time"]
 
+        if machine["status"] != "idle":
+            raise ValueError("目标机器当前非空闲")
+
         transport_time = 0.0
         reposition_time = 0.0
         carrying_time = 0.0
@@ -136,9 +139,26 @@ class Dispatcher:
         transport_finish = current_time
 
         if job["current_location"] != machine["location"]:
+            source_loc = job["current_location"]
+            if vehicle is None:
+                strategy = state.get("metadata", {}).get("dispatching_config", {}).get("transport_rule", "NEAREST_VEHICLE")
+                vehicle_scheduler = TransportScheduler(state, strategy=strategy)
+                assigned = vehicle_scheduler.assign_vehicle(
+                    job["job_id"], current_op["op_id"], source_loc, machine["location"]
+                )
+                if not assigned:
+                    vehicle_scheduler.enqueue_transport(
+                        {"job_id": job["job_id"], "op_id": current_op["op_id"], "machine_id": machine["machine_id"]}
+                    )
+                    raise ValueError("暂无可用车辆")
+                decision["vehicle_id"] = assigned
+                vehicle = Dispatcher._find_vehicle(state, assigned)
+            if vehicle is None or vehicle["status"] != "idle":
+                raise ValueError("目标车辆当前非空闲")
+
             reposition_time, carrying_time, transport_time = Dispatcher._calc_transport(
                 state,
-                job["current_location"],
+                source_loc,
                 machine["location"],
                 vehicle,
             )
@@ -149,8 +169,18 @@ class Dispatcher:
             vehicle["available_time"] = transport_finish
             vehicle["current_location"] = machine["location"]
             vehicle["current_task"] = f"{job['job_id']}->{machine['machine_id']}"
+            if "task_queue" in vehicle and vehicle["task_queue"]:
+                vehicle["task_queue"] = vehicle["task_queue"][1:]
 
             job["current_location"] = machine["location"]
+            stats = state.setdefault("transport_stats", {})
+            stats.setdefault("total_wait_time", 0.0)
+            stats["total_wait_time"] += max(0.0, transport_start - current_time)
+            stats.setdefault("vehicle_busy_time", {})
+            stats["vehicle_busy_time"][vehicle["vehicle_id"]] = stats["vehicle_busy_time"].get(vehicle["vehicle_id"], 0.0) + transport_time
+            stats.setdefault("path_loads", {})
+            path_key = f"{source_loc}->{machine['location']}"
+            stats["path_loads"][path_key] = stats["path_loads"].get(path_key, 0) + 1
 
         start_time = max(
             current_time,

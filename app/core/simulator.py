@@ -51,15 +51,22 @@ class Simulator:
         state = copy.deepcopy(initial_state)
         step = 0
 
-        while not all(j["finished"] for j in state["jobs"]) and step < max_steps:
+        while not all(j.get("finished") for j in state["jobs"]) and step < max_steps:
             Simulator._release_resources(state)
             decision = policy_func(state)
 
             if decision:
-                state = Dispatcher.apply_decision(state, decision)
+                try:
+                    state = Dispatcher.apply_decision(state, decision)
+                except Exception as e:
+                    # 决策应用失败，尝试推进时间以解决资源冲突
+                    if not Simulator._advance_time(state):
+                        break
             else:
                 moved = Simulator._advance_time(state)
                 if not moved:
+                    # 尝试强行推进到下一个可能的时间点（如 release_time）
+                    # 防止因为 time=0 且 release_time=0 导致的 stuck
                     break
 
             step += 1
@@ -67,6 +74,6 @@ class Simulator:
         final_finish = 0.0
         if state["history"]:
             final_finish = max(h["finish_time"] for h in state["history"])
-        state["time"] = max(state["time"], final_finish)
+        state["time"] = max(state.get("time", 0.0), final_finish)
         Simulator._release_resources(state)
         return state
