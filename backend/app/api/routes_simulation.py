@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from itertools import combinations
 from typing import Any, Dict, List
+from datetime import datetime
 from app.models.schema import (
     SimulationRuleRequest,
     ScheduleRequest,
@@ -22,7 +23,7 @@ from app.core.math_optimizer import MathOptimizer
 from app.core.meta_heuristic import GeneticAlgorithm
 from app.core.multi_strategy_scheduler import MultiStrategyScheduler
 from app.llm.ollama_client import OllamaClient
-from app.llm.prompt_builder import build_reflection_prompt, build_llm_plan_payload, build_llm_plan_brief
+from app.llm.prompt_builder import build_reflection_prompt, build_llm_plan_payload, build_llm_plan_brief, build_ollama_plan_prompt
 from app.config import settings
 
 router = APIRouter()
@@ -54,6 +55,35 @@ async def run_unified_simulation(payload: Dict[str, Any]):
         # 即使 mode 为 ppo_plan，也建议返回完整对比以增加实验价值
         # 但这里我们遵循用户逻辑：compare_all 为全量，其余为特定模式（此处简化为全部走全量）
         response = platform.execute_all(ppo_policy_id=ppo_id)
+        llm_cfg = payload.get("llm_config", {}) or {}
+        use_ollama = bool(llm_cfg.get("use_ollama", True))
+        if use_ollama:
+            try:
+                best = response.summary_comparison[0] if response.summary_comparison else {}
+                best_rule = best.get("rule")
+                best_scheme = next((s for s in response.detailed_schemes if s.rule == best_rule), None)
+                llm_payload = build_llm_plan_payload(
+                    {
+                        "objective": "makespan",
+                        "best_rule": best_rule,
+                        "best_metrics": best_scheme.metrics.model_dump() if best_scheme else {},
+                        "best_schedule_plan": [x.model_dump() for x in (best_scheme.plan if best_scheme else [])],
+                        "all_rule_results": [
+                            {
+                                "rule": s.rule,
+                                "metrics": s.metrics.model_dump(),
+                                "plan": [p.model_dump() for p in s.plan],
+                            }
+                            for s in response.detailed_schemes
+                        ],
+                    }
+                )
+                prompt = build_ollama_plan_prompt(llm_payload)
+                model_text = ollama_client.generate(prompt)
+                if model_text and model_text.strip():
+                    response.llm_readable_brief = model_text.strip()
+            except Exception:
+                pass
         
         return response
         
@@ -333,6 +363,22 @@ def _extract_global_noise_range(payload: Dict[str, Any]) -> (float, float):
 
 
 def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _to_float_time(value: Any, default: float = 0.0) -> float:
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            return float(value)
+        text = str(value).strip()
+        try:
+            return float(text)
+        except Exception:
+            pass
+        try:
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+            return float(dt.timestamp())
+        except Exception:
+            return default
+
     factory = payload.get("factory_info", {}) or {}
     floor = payload.get("shop_floor", {}) or {}
     jobs_raw = payload.get("jobs", []) or []
@@ -417,7 +463,7 @@ def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
         "machines": machines,
         "vehicles": vehicles,
         "layout": layout,
-        "current_time": float(factory.get("current_time", 0.0)),
+        "current_time": _to_float_time(factory.get("current_time", 0.0), 0.0),
         "strategic_experience": "rich_json_dynamic_scheduling",
         "metadata": {
             "factory_id": factory.get("factory_id"),

@@ -176,3 +176,32 @@ def build_llm_plan_brief(llm_payload: Dict[str, Any]) -> str:
             lines.append(f"- {item['rule']}: 预期 Makespan = {mk_item}")
 
     return "\n".join(lines)
+
+
+def build_ollama_plan_prompt(llm_payload: Dict[str, Any]) -> str:
+    objective = llm_payload.get("objective", "makespan")
+    best_rule = llm_payload.get("best_rule", "")
+    best_metrics = llm_payload.get("best_metrics", {})
+    schedule_plan = llm_payload.get("best_schedule_plan", [])
+    comparison = llm_payload.get("rule_comparison", [])
+    return f"""
+你是生产-运输协同调度分析专家。请基于以下结构化结果，输出给前端可直接展示的中文方案说明。
+
+要求：
+1) 用简洁中文输出；
+2) 必须包含：核心策略、核心指标、关键调度步骤、运输瓶颈与改进建议；
+3) 不要输出 JSON，不要输出代码块；
+4) 如果某策略 makespan<=0，要明确指出该策略无效，不得当作最优。
+
+优化目标: {objective}
+核心策略: {best_rule}
+核心指标: {best_metrics}
+核心计划步骤: {schedule_plan[:20]}
+策略对比: {comparison}
+
+请输出：
+- 调度结论
+- 关键路径解释
+- 风险与瓶颈
+- 下一步优化建议
+""".strip()
