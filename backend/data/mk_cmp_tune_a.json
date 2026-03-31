@@ -1,0 +1,432 @@
+[
+  {
+    "case": "Mk01",
+    "traditional_rule": "SPT",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 141.0,
+      "utilization": 0.2388,
+      "total_tardiness": 0.0,
+      "total_transport_time": 257.1667,
+      "num_events": 55,
+      "is_complete": true,
+      "total_ops_expected": 55,
+      "vehicle_utilization": 0.9119,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l/u->l6",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 164.1667,
+      "utilization": 0.201,
+      "total_tardiness": 0.0,
+      "total_transport_time": 248.0,
+      "num_events": 55,
+      "is_complete": true,
+      "total_ops_expected": 55,
+      "vehicle_utilization": 0.7553,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l/u->l6",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk02",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 118.0,
+      "utilization": 0.3192,
+      "total_tardiness": 0.0,
+      "total_transport_time": 207.6667,
+      "num_events": 58,
+      "is_complete": true,
+      "total_ops_expected": 58,
+      "vehicle_utilization": 0.8799,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l/u->l1",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 113.5,
+      "utilization": 0.301,
+      "total_tardiness": 0.0,
+      "total_transport_time": 172.3333,
+      "num_events": 58,
+      "is_complete": true,
+      "total_ops_expected": 58,
+      "vehicle_utilization": 0.7592,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l/u->l2",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk03",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 420.8333,
+      "utilization": 0.4441,
+      "total_tardiness": 0.0,
+      "total_transport_time": 804.3333,
+      "num_events": 150,
+      "is_complete": true,
+      "total_ops_expected": 150,
+      "vehicle_utilization": 0.9556,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l5->l3",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 572.8333,
+      "utilization": 0.2442,
+      "total_tardiness": 0.0,
+      "total_transport_time": 758.5,
+      "num_events": 150,
+      "is_complete": true,
+      "total_ops_expected": 150,
+      "vehicle_utilization": 0.6621,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l4->l7",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk04",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 271.0,
+      "utilization": 0.1836,
+      "total_tardiness": 0.0,
+      "total_transport_time": 526.1667,
+      "num_events": 90,
+      "is_complete": true,
+      "total_ops_expected": 90,
+      "vehicle_utilization": 0.9708,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l/u->l5",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 269.0,
+      "utilization": 0.1733,
+      "total_tardiness": 0.0,
+      "total_transport_time": 508.8333,
+      "num_events": 90,
+      "is_complete": true,
+      "total_ops_expected": 90,
+      "vehicle_utilization": 0.9458,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l3->l4",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk05",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 307.6667,
+      "utilization": 0.5924,
+      "total_tardiness": 0.0,
+      "total_transport_time": 427.1667,
+      "num_events": 106,
+      "is_complete": true,
+      "total_ops_expected": 106,
+      "vehicle_utilization": 0.6942,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l2->l4",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 352.0,
+      "utilization": 0.5007,
+      "total_tardiness": 0.0,
+      "total_transport_time": 341.8333,
+      "num_events": 106,
+      "is_complete": true,
+      "total_ops_expected": 106,
+      "vehicle_utilization": 0.4856,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l1->l3",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk06",
+    "traditional_rule": "SPT",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 437.0,
+      "utilization": 0.0946,
+      "total_tardiness": 0.0,
+      "total_transport_time": 740.8333,
+      "num_events": 150,
+      "is_complete": true,
+      "total_ops_expected": 150,
+      "vehicle_utilization": 0.8476,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l1->l3",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 451.0,
+      "utilization": 0.0835,
+      "total_tardiness": 0.0,
+      "total_transport_time": 862.0,
+      "num_events": 150,
+      "is_complete": true,
+      "total_ops_expected": 150,
+      "vehicle_utilization": 0.9557,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l1->l7",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk07",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 315.3333,
+      "utilization": 0.633,
+      "total_tardiness": 0.0,
+      "total_transport_time": 442.3333,
+      "num_events": 100,
+      "is_complete": true,
+      "total_ops_expected": 100,
+      "vehicle_utilization": 0.7014,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l/u->l5",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 356.6667,
+      "utilization": 0.4716,
+      "total_tardiness": 0.0,
+      "total_transport_time": 362.1667,
+      "num_events": 100,
+      "is_complete": true,
+      "total_ops_expected": 100,
+      "vehicle_utilization": 0.5077,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l/u->l5",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk08",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 1109.8333,
+      "utilization": 0.2469,
+      "total_tardiness": 0.0,
+      "total_transport_time": 2000.1667,
+      "num_events": 225,
+      "is_complete": true,
+      "total_ops_expected": 225,
+      "vehicle_utilization": 0.9011,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l5->l1",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 1209.3333,
+      "utilization": 0.2166,
+      "total_tardiness": 0.0,
+      "total_transport_time": 1850.3333,
+      "num_events": 225,
+      "is_complete": true,
+      "total_ops_expected": 225,
+      "vehicle_utilization": 0.765,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l3->l1",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk09",
+    "traditional_rule": "MWKR",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 889.8333,
+      "utilization": 0.3147,
+      "total_tardiness": 0.0,
+      "total_transport_time": 1714.1667,
+      "num_events": 240,
+      "is_complete": true,
+      "total_ops_expected": 240,
+      "vehicle_utilization": 0.9632,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v1",
+      "busiest_path": "l1->l8",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 913.1667,
+      "utilization": 0.2707,
+      "total_tardiness": 0.0,
+      "total_transport_time": 1553.3333,
+      "num_events": 240,
+      "is_complete": true,
+      "total_ops_expected": 240,
+      "vehicle_utilization": 0.8505,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l4->l5",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  },
+  {
+    "case": "Mk10",
+    "traditional_rule": "SPT",
+    "framework_rule": "COOP_RH",
+    "traditional_metrics": {
+      "makespan": 814.6667,
+      "utilization": 0.1829,
+      "total_tardiness": 0.0,
+      "total_transport_time": 1447.3333,
+      "num_events": 240,
+      "is_complete": true,
+      "total_ops_expected": 240,
+      "vehicle_utilization": 0.8883,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l2->l1",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    },
+    "framework_metrics": {
+      "makespan": 817.6667,
+      "utilization": 0.1888,
+      "total_tardiness": 0.0,
+      "total_transport_time": 1492.5,
+      "num_events": 240,
+      "is_complete": true,
+      "total_ops_expected": 240,
+      "vehicle_utilization": 0.9127,
+      "transport_wait_time": 0.0,
+      "busiest_vehicle": "v2",
+      "busiest_path": "l1->l2",
+      "path_conflicts": 0,
+      "machine_idle_reasons": {
+        "waiting_transport": 0,
+        "waiting_machine": 0,
+        "waiting_repair": 0
+      }
+    }
+  }
+]

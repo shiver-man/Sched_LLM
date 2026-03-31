@@ -41,6 +41,7 @@ class MultiStrategyScheduler:
         # 2. 启发式调度 (Heuristic)
         self.register_strategy("COOP", "Heuristic", self._run_pdr_strategy)
         self.register_strategy("COOP_RH", "Heuristic", self._run_pdr_strategy)
+        self.register_strategy("COOP_RH_ADAPT", "Heuristic", self._run_pdr_strategy)
         
         # 3. 元启发式调度 (Meta-heuristic)
         self.register_strategy("GA", "Meta-heuristic", self._run_ga_strategy)

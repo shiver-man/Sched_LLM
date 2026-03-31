@@ -109,6 +109,53 @@ class PDR:
         return urgency
 
     @staticmethod
+    def _adaptive_joint_weights(
+        state: Dict[str, Any],
+        dispatchable_jobs: List[Dict[str, Any]],
+        available_machines: List[Dict[str, Any]],
+        base_weights: Dict[str, float],
+    ) -> Dict[str, float]:
+        def _clip(value: float, low: float, high: float) -> float:
+            return max(low, min(high, value))
+
+        machines = state.get("machines", [])
+        vehicles = state.get("vehicles", [])
+        num_m = max(1, len(machines))
+        num_v = max(1, len(vehicles))
+        idle_m_ratio = len(available_machines) / num_m
+        idle_v_ratio = len([v for v in vehicles if v.get("status") == "idle"]) / num_v
+        busy_v_ratio = 1.0 - idle_v_ratio
+
+        machine_loc = {m["machine_id"]: m["location"] for m in machines}
+        transport_need = 0
+        for job in dispatchable_jobs:
+            op = job["operations"][job["current_op_index"]]
+            candidates = op.get("candidate_machines", [])
+            if not candidates:
+                continue
+            same_loc_possible = any(
+                machine_loc.get(cm["machine_id"]) == job.get("current_location") for cm in candidates
+            )
+            if not same_loc_possible:
+                transport_need += 1
+        transport_need_ratio = transport_need / max(1, len(dispatchable_jobs))
+
+        proc_boost = 0.6 * idle_m_ratio - 0.25 * busy_v_ratio
+        transport_boost = 0.5 * transport_need_ratio + 0.35 * busy_v_ratio - 0.2 * idle_m_ratio
+        horizon_boost = 0.4 * transport_need_ratio - 0.5 * idle_m_ratio
+
+        adaptive = dict(base_weights)
+        adaptive["alpha"] = base_weights["alpha"] * _clip(1.0 + proc_boost, 0.7, 1.8)
+        adaptive["beta"] = base_weights["beta"] * _clip(1.0 + transport_boost, 0.6, 1.8)
+        adaptive["gamma"] = base_weights["gamma"] * _clip(1.0 + 0.6 * busy_v_ratio, 0.7, 1.8)
+        adaptive["delta"] = base_weights["delta"] * _clip(1.0 + 0.2 * transport_need_ratio, 0.8, 1.4)
+        adaptive["epsilon"] = base_weights["epsilon"] * _clip(1.0 + 0.2 * idle_m_ratio, 0.8, 1.4)
+        adaptive["eta"] = base_weights["eta"] * _clip(1.0 + 0.8 * busy_v_ratio, 0.7, 2.0)
+        adaptive["zeta"] = base_weights["zeta"] * _clip(1.0 + horizon_boost, 0.5, 1.6)
+        adaptive["kappa"] = base_weights["kappa"] * _clip(1.0 + 0.2 * idle_m_ratio, 0.8, 1.4)
+        return adaptive
+
+    @staticmethod
     def get_dispatch_action(state: Dict[str, Any], rule: str = "SPT") -> Optional[Dict[str, Any]]:
         dispatchable_jobs = [j for j in get_dispatchable_jobs(state) if not j.get("locked", False)]
         if not dispatchable_jobs:
@@ -194,16 +241,36 @@ class PDR:
                 )
 
             selected = max(candidates, key=remaining_work)
-        elif rule in {"COOP", "COOP_RH"}:
+        elif rule in {"COOP", "COOP_RH", "COOP_RH_ADAPT"}:
             weights = state.get("metadata", {}).get("dispatching_config", {}).get("joint_score_weights", {})
-            alpha = float(weights.get("alpha", 1.0))
-            beta = float(weights.get("beta", 1.0))
-            gamma = float(weights.get("gamma", 0.6))
-            delta = float(weights.get("delta", 0.5))
-            epsilon = float(weights.get("epsilon", 0.3))
-            eta = float(weights.get("eta", 0.4))
-            zeta = float(weights.get("zeta", 0.8 if rule == "COOP_RH" else 0.4))
-            kappa = float(weights.get("kappa", 0.9))
+            default_zeta = 0.8 if rule in {"COOP_RH", "COOP_RH_ADAPT"} else 0.4
+            base_joint_weights = {
+                "alpha": float(weights.get("alpha", 1.0)),
+                "beta": float(weights.get("beta", 1.0)),
+                "gamma": float(weights.get("gamma", 0.6)),
+                "delta": float(weights.get("delta", 0.5)),
+                "epsilon": float(weights.get("epsilon", 0.3)),
+                "eta": float(weights.get("eta", 0.4)),
+                "zeta": float(weights.get("zeta", default_zeta)),
+                "kappa": float(weights.get("kappa", 0.9)),
+            }
+            if rule == "COOP_RH_ADAPT":
+                adaptive_weights = PDR._adaptive_joint_weights(
+                    state=state,
+                    dispatchable_jobs=dispatchable_jobs,
+                    available_machines=available_machines,
+                    base_weights=base_joint_weights,
+                )
+            else:
+                adaptive_weights = base_joint_weights
+            alpha = adaptive_weights["alpha"]
+            beta = adaptive_weights["beta"]
+            gamma = adaptive_weights["gamma"]
+            delta = adaptive_weights["delta"]
+            epsilon = adaptive_weights["epsilon"]
+            eta = adaptive_weights["eta"]
+            zeta = adaptive_weights["zeta"]
+            kappa = adaptive_weights["kappa"]
             selected = min(
                 candidates,
                 key=lambda x: (

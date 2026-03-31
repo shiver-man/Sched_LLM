@@ -1,0 +1,13 @@
+[
+  {
+    "case": "C:\\Users\\shiver\\Desktop\\Sched_LLM\\FJSP算例\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk01.fjs",
+    "http_status": 200,
+    "http_status_full": 200,
+    "best_rule": "CP-SAT",
+    "best_makespan": 65.0,
+    "num_schemes": 8,
+    "ga_makespan": 133.9501,
+    "ga_complete": true,
+    "llm_brief_len": 1101
+  }
+]

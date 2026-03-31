@@ -28,7 +28,7 @@ from app.config import settings
 
 router = APIRouter()
 ollama_client = OllamaClient(model=settings.ollama_model)
-SUPPORTED_RULES = ["SPT", "FIFO", "MWKR", "COOP", "COOP_RH"]
+SUPPORTED_RULES = ["SPT", "FIFO", "MWKR", "COOP", "COOP_RH", "COOP_RH_ADAPT"]
 
 
 @router.post("/run", response_model=MultiStrategyResponse)
