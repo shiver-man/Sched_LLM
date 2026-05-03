@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 from app.models.state import get_dispatchable_jobs
+from app.core.experience_store import experience_store
 
 def _summarize_jobs(state: Dict[str, Any]) -> str:
     lines = []
@@ -65,28 +66,50 @@ def build_dispatch_prompt(state: Dict[str, Any], strategic_experience: str = "")
 """.strip()
 
 
-def build_reflection_prompt(trajectories):
+def build_reflection_prompt(trajectories: List[Dict[str, Any]]):
+    # 仅提取核心指标进行反思，避免原始数据干扰
+    summaries = []
+    for t in trajectories:
+        m = t.get("metrics", {})
+        summaries.append(f"规则: {t['rule']} | Makespan: {m.get('makespan')} | 利用率: {m.get('utilization')} | 运输占比: {round(m.get('total_transport_time', 0)/max(1, m.get('makespan', 1))*100, 1)}%")
+
     return f"""
-你是调度优化反思专家。
-请根据以下不同启发式规则得到的调度结果，归纳哪种规则在哪些状态下表现更好，并给出可迁移的高层策略建议。
+你是一位深耕离散制造与协同物流的【调度经验蒸馏专家】。
+你的目标是从多组调度轨迹对比中，提炼出具有普适性、可读性、可迁移的“黄金准则”。
 
-输入轨迹摘要：
-{trajectories}
+输入轨迹概要（已精简）：
+{summaries}
 
-请输出中文分析。
+请通过对上述数据的“深度蒸馏”，输出一份【可读性极强的经验简报】：
+1. 【核心发现】：哪种规则在当前这种规模和约束下表现出了压倒性优势？其背后的逻辑是什么？
+2. 【生产-物流协同规律】：运输占比与完工时间之间呈现出怎样的博弈关系？
+3. 【可迁移经验】：如果以后遇到类似的（工件/机器规模）场景，我们应该优先采用什么策略？请给出 1-2 条明确的黄金法则。
+
+要求：
+- 严禁堆砌数据！必须转化为人类可理解的战略语言。
+- 语气专业且具洞察力。
 """.strip()
 
 
 def build_llm_plan_payload(plan_result: Dict[str, Any]) -> Dict[str, Any]:
     all_rule_results = plan_result.get("all_rule_results", [])
-    comparison = [
-        {
-            "rule": item["rule"],
-            "metrics": item["metrics"],
-            "num_steps": len(item.get("plan", [])),
-        }
-        for item in all_rule_results
-    ]
+    comparison = []
+    for item in all_rule_results:
+        # 兼容两种格式：原始 plan 列表 或 精简后的 plan_summary 描述
+        num_steps = 0
+        if "plan" in item:
+            num_steps = len(item["plan"])
+        elif "plan_summary" in item:
+            import re
+            # 尝试从 "共 123 步" 这种字符串中提取数字
+            match = re.search(r"(\d+)", str(item["plan_summary"]))
+            num_steps = int(match.group(1)) if match else 0
+            
+        comparison.append({
+            "rule": item.get("rule"),
+            "metrics": item.get("metrics"),
+            "num_steps": num_steps,
+        })
 
     return {
         "task_type": "fjsp_production_transport_scheduling",
@@ -94,87 +117,34 @@ def build_llm_plan_payload(plan_result: Dict[str, Any]) -> Dict[str, Any]:
         "best_rule": plan_result.get("best_rule"),
         "best_metrics": plan_result.get("best_metrics", {}),
         "best_schedule_plan": plan_result.get("best_schedule_plan", []),
+        "jobs": plan_result.get("jobs", []),
+        "machines": plan_result.get("machines", []),
+        "vehicles": plan_result.get("vehicles", []),
         "rule_comparison": comparison,
     }
 
 
 def build_llm_plan_brief(llm_payload: Dict[str, Any]) -> str:
     """
-    构建具有可解释性 (XAI) 的调度简报。
-    符合“可解释性”目标：通过前瞻得分和协同度分析，解释调度决策的底层逻辑。
+    构建具有可解释性 (XAI) 的调度简报（Python 备选逻辑）。
     """
     best_metrics = llm_payload.get("best_metrics", {})
     best_steps = llm_payload.get("best_schedule_plan", [])
     rule_comparison = llm_payload.get("rule_comparison", [])
 
-    def _to_float(value: Any, default: float = 0.0) -> float:
-        try:
-            return float(value)
-        except Exception:
-            return default
-
-    valid_candidates = []
-    for item in rule_comparison:
-        metrics = item.get("metrics", {})
-        mk = _to_float(metrics.get("makespan", 0))
-        if mk > 0:
-            valid_candidates.append(item)
-
-    if _to_float(best_metrics.get("makespan", 0)) <= 0 and valid_candidates:
-        best_item = min(valid_candidates, key=lambda x: _to_float(x.get("metrics", {}).get("makespan", 0)))
-        best_metrics = best_item.get("metrics", {})
-        llm_payload["best_rule"] = best_item.get("rule")
-
     lines = [
-        "**调度概览与诊断**",
-        f"优化目标: {llm_payload.get('objective', 'makespan')}",
-        f"核心策略: {llm_payload.get('best_rule')} (含时域前瞻自适应模型)",
-        (
-            "综合指标: "
-            f"Makespan={best_metrics.get('makespan')}, "
-            f"设备利用率={best_metrics.get('utilization')}, "
-            f"运输占比={round(_to_float(best_metrics.get('total_transport_time', 0)) / max(1.0, _to_float(best_metrics.get('makespan', 1))) * 100, 1)}%"
-        ),
+        "### 📊 调度方案执行简报",
+        f"**最优策略**: {llm_payload.get('best_rule')} | **完工时间**: {best_metrics.get('makespan')}",
+        f"**资源利用率**: {best_metrics.get('utilization')} | **运输压力**: {round(best_metrics.get('total_transport_time', 0)/max(1, best_metrics.get('makespan', 1))*100, 1)}%",
         "",
-        "**策略决策分析 (XAI)**",
+        "#### 核心决策路径：",
     ]
-
-    # 1. 瓶颈与协同度深度分析
-    t_time = _to_float(best_metrics.get("total_transport_time", 0))
-    mk = _to_float(best_metrics.get("makespan", 1), 1.0)
-    if t_time > mk * 0.6:
-        lines.append("- ⚠️ 物流瓶颈突出：运输耗时严重拖累生产节奏，建议优化布局或增加搬运资源。")
-    elif t_time < mk * 0.2:
-        lines.append("- ✅ 物流响应极佳：运输损耗被成功压缩，体现了优异的生产-运输协同性。")
-
-    m_util = _to_float(best_metrics.get("utilization", 0))
-    if m_util < 0.4:
-        lines.append("- ⚠️ 产能闲置：加工资源未被充分激活，前瞻推演显示这可能与工件到达不均衡有关。")
-
-    # 2. 前瞻决策路径
-    lines.append("")
-    lines.append("**关键决策路径 (Look-Ahead Insight):**")
-    lines.append("注：Score 代表决策的长远收益预估，分值越高表示对后续瓶颈的缓解越有效。")
-    for step in best_steps[:12]:
-        v_str = f" [AGV:{step.get('vehicle_id')}]" if step.get("vehicle_id") else " [无运输]"
-        score_val = step.get("lookahead_score", "N/A")
-        lines.append(
-            f"T={step['start_time']} | {step['job_id']} → {step['machine_id']}{v_str} | Score: {score_val} | 完工={step['finish_time']}"
-        )
-    if len(best_steps) > 12:
-        lines.append(f"... (其余 {len(best_steps)-12} 个步骤已省略)")
-
-    # 3. 鲁棒性验证
-    lines.append("")
-    lines.append("**方案鲁棒性对比 (多场景推演):**")
-    for item in rule_comparison:
-        metrics = item.get("metrics", {})
-        mk_item = _to_float(metrics.get("makespan", 0))
-        if mk_item <= 0:
-            lines.append(f"- {item['rule']}: 无有效计划")
-        else:
-            lines.append(f"- {item['rule']}: 预期 Makespan = {mk_item}")
-
+    
+    for step in best_steps[:5]:
+        v_str = f" [车辆:{step.get('vehicle_id')}]" if step.get("vehicle_id") else " [无需运输]"
+        lines.append(f"- T={step['start_time']}：安排工件 {step['job_id']} 至机器 {step['machine_id']}{v_str}")
+    
+    lines.append("\n*注：完整数据请在「详细方案」中查看。*")
     return "\n".join(lines)
 
 
@@ -184,24 +154,61 @@ def build_ollama_plan_prompt(llm_payload: Dict[str, Any]) -> str:
     best_metrics = llm_payload.get("best_metrics", {})
     schedule_plan = llm_payload.get("best_schedule_plan", [])
     comparison = llm_payload.get("rule_comparison", [])
+    
+    # 检索相似历史经验（实现快速响应与经验复用）
+    case_summary = {
+        "jobs_count": len(llm_payload.get("jobs", [])),
+        "machines_count": len(llm_payload.get("machines", [])),
+        "vehicles_count": len(llm_payload.get("vehicles", [])),
+    }
+    similar_exps = experience_store.search_similar(case_summary, limit=2)
+    exp_context = ""
+    if similar_exps:
+        exp_context = "\n### 📚 调取历史相似案例沉淀的【蒸馏经验】：\n"
+        for i, exp in enumerate(similar_exps):
+            exp_context += f"- 案例{i+1}：{exp.reflection[:200]}...\n"
+
+    # 为了防止 token 过多导致 Ollama 处理过慢，这里将 steps 进一步精简，只取前5步作为示例，并简化字段
+    simplified_plan = []
+    for step in schedule_plan[:5]:
+        simplified_plan.append({
+            "j": step.get("job_id"),
+            "m": step.get("machine_id"),
+            "v": step.get("vehicle_id"),
+            "t": f"{step.get('start_time')}-{step.get('finish_time')}"
+        })
+
     return f"""
-你是生产-运输协同调度分析专家。请基于以下结构化结果，输出给前端可直接展示的中文方案说明。
+你是一位专业的【大模型驱动的智能排产与可解释调度专家】。
+你的核心任务是展现大模型在排产系统中的“认知增强、经验蒸馏与交互驱动”三大核心价值，将底层的冷冰冰算法轨迹数据，转化为管理者能看懂的管理洞察。
+{exp_context}
 
-要求：
-1) 用简洁中文输出；
-2) 必须包含：核心策略、核心指标、关键调度步骤、运输瓶颈与改进建议；
-3) 不要输出 JSON，不要输出代码块；
-4) 如果某策略 makespan<=0，要明确指出该策略无效，不得当作最优。
+---
+### 原始数据摘要（仅供参考）：
+- 优化目标: {objective}
+- 选定核心最优策略: {best_rule}
+- 最优策略指标表现: {best_metrics}
+- 各种策略横向对比: {comparison}
+- 最优策略前置步骤示例: {simplified_plan}
 
-优化目标: {objective}
-核心策略: {best_rule}
-核心指标: {best_metrics}
-核心计划步骤: {schedule_plan[:20]}
-策略对比: {comparison}
+---
+请基于以上数据，输出一份面向工厂管理层的【大模型排产深度分析报告】，必须严格按照以下三大模块进行结构化输出：
 
-请输出：
-- 调度结论
-- 关键路径解释
-- 风险与瓶颈
-- 下一步优化建议
+### 1. 结果的可解释性蒸馏（解释驱动）
+分析并解释为什么“{best_rule}”策略在当前工况下被选为最优方案。
+结合具体数据（如完工时间、设备利用率、运输等待时间），找出方案成功的关键点。
+【必须包含】：指出当前车间中的核心瓶颈是什么（是哪台机器过度繁忙，还是运输资源成为短板，并引用数据证明）。
+
+### 2. 经验的沉淀与复用（知识驱动）
+作为大模型，你需要结合上面的【历史相似案例经验】（如果有）以及本次排产的结果进行深度反思。
+总结出在面对类似规模的排产任务时，未来应该遵循哪些通用的调度原则。例如：是否应该更倾向于就近加工？是否应该放宽运输优先级？
+
+### 3. 多算法策略的动态评估（评估驱动）
+分析其他被淘汰策略（如 {', '.join([x['rule'] for x in comparison if x['rule'] != best_rule])} 等）为什么表现不佳。
+它们在权衡什么指标时出现了偏差（比如过度追求单机效率导致了大量的运输损耗）？给出在遇到突发插单或设备故障时，策略切换的建议。
+
+【要求】：
+- 禁止直接平铺罗列 JSON 数据或流水账式列出每一步。
+- 语气需专业、自信，突出“大模型正在驱动整个决策闭环”的视角。
+- 输出必须严格使用上述三个一级标题。
 """.strip()

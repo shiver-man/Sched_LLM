@@ -1,0 +1,122 @@
+[
+  {
+    "group": "Brandimarte",
+    "case": "Mk01",
+    "framework_transport_time": 287.3333,
+    "traditional_transport_time": 257.1667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 255.3333,
+    "traditional_sync_loss": 171.8334,
+    "busiest_vehicle_fw": "v1",
+    "busiest_vehicle_tr": "v2"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk02",
+    "framework_transport_time": 190.8333,
+    "traditional_transport_time": 207.6667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 144.6667,
+    "traditional_sync_loss": 163.0,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk03",
+    "framework_transport_time": 804.6667,
+    "traditional_transport_time": 804.3333,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 728.5,
+    "traditional_sync_loss": 737.0,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk04",
+    "framework_transport_time": 535.8333,
+    "traditional_transport_time": 526.1667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 512.5,
+    "traditional_sync_loss": 507.5,
+    "busiest_vehicle_fw": "v1",
+    "busiest_vehicle_tr": "v2"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk05",
+    "framework_transport_time": 375.8333,
+    "traditional_transport_time": 427.1667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 309.6667,
+    "traditional_sync_loss": 323.1667,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk06",
+    "framework_transport_time": 1006.6667,
+    "traditional_transport_time": 740.8333,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 615.0,
+    "traditional_sync_loss": 407.6667,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk07",
+    "framework_transport_time": 393.0,
+    "traditional_transport_time": 442.3333,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 326.5,
+    "traditional_sync_loss": 345.0,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk08",
+    "framework_transport_time": 1902.0,
+    "traditional_transport_time": 2000.1667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 1860.0,
+    "traditional_sync_loss": 1920.6667,
+    "busiest_vehicle_fw": "v2",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk09",
+    "framework_transport_time": 1571.5,
+    "traditional_transport_time": 1714.1667,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 1546.5,
+    "traditional_sync_loss": 1682.0,
+    "busiest_vehicle_fw": "v1",
+    "busiest_vehicle_tr": "v1"
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk10",
+    "framework_transport_time": 1566.8333,
+    "traditional_transport_time": 1447.3333,
+    "framework_transport_wait": 0.0,
+    "traditional_transport_wait": 0.0,
+    "framework_sync_loss": 1441.8333,
+    "traditional_sync_loss": 1161.5,
+    "busiest_vehicle_fw": "v1",
+    "busiest_vehicle_tr": "v2"
+  }
+]

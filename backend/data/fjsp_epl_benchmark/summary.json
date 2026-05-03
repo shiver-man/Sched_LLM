@@ -1,0 +1,38 @@
+{
+  "framework_rule": "COOP_RH",
+  "traditional_rules": [
+    "SPT",
+    "FIFO",
+    "MWKR"
+  ],
+  "portfolio_rules": [
+    "COOP_RH"
+  ],
+  "group_summary": {
+    "Brandimarte": {
+      "cases": 10,
+      "valid_cases": 10,
+      "framework_win_cases": 7,
+      "avg_makespan_improve_pct": 0.7463,
+      "avg_transport_improve_pct": -1.3242,
+      "avg_sync_loss_improve_pct": -9.1418
+    },
+    "Hurink_overall": {
+      "cases": 0,
+      "valid_cases": 0,
+      "framework_win_cases": 0,
+      "avg_makespan_improve_pct": null,
+      "avg_transport_improve_pct": null,
+      "avg_sync_loss_improve_pct": null
+    },
+    "All": {
+      "cases": 10,
+      "valid_cases": 10,
+      "framework_win_cases": 7,
+      "avg_makespan_improve_pct": 0.7463,
+      "avg_transport_improve_pct": -1.3242,
+      "avg_sync_loss_improve_pct": -9.1418
+    }
+  },
+  "hurink_batches": {}
+}

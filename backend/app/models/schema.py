@@ -1,4 +1,6 @@
 from typing import List, Optional, Dict, Any
+import uuid
+from datetime import datetime
 from pydantic import BaseModel, Field, AliasChoices, field_validator
 from app.models.job import Job
 from app.models.machine import Machine
@@ -80,12 +82,14 @@ class ScheduleMetrics(BaseModel):
     num_events: int
     is_complete: bool = False
     total_ops_expected: int = 0
+    machine_total_idle_time: float = 0.0
     vehicle_utilization: float = 0.0
     transport_wait_time: float = 0.0
     busiest_vehicle: Optional[str] = None
     busiest_path: Optional[str] = None
     path_conflicts: int = 0
     machine_idle_reasons: Optional[Dict[str, int]] = None
+    machine_idle_reason_durations: Optional[Dict[str, float]] = None
 
 
 class ScheduleScheme(BaseModel):
@@ -97,9 +101,10 @@ class ScheduleScheme(BaseModel):
 
 class MultiStrategyResponse(BaseModel):
     status: str = "success"
-    detailed_schemes: List[ScheduleScheme]
-    summary_comparison: List[Dict[str, Any]]
+    detailed_schemes: Optional[List[ScheduleScheme]] = None
+    summary_comparison: Optional[List[Dict[str, Any]]] = None
     llm_readable_brief: str = ""
+    gantt_chart_base64: Optional[str] = None
 
 
 class SimulationRuleRequest(ScheduleRequest):
@@ -180,3 +185,13 @@ class DynamicUncertaintyRequest(ScheduleRequest):
     policy_type: str = Field("PPO", description="PPO / SPT / FIFO / MWKR")
     policy_id: Optional[str] = None
     seed: int = 42
+
+
+class SchedulingExperience(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    case_summary: Dict[str, Any]  # {jobs_count, machines_count, vehicles_count, total_ops}
+    best_strategy: str
+    metrics: ScheduleMetrics
+    reflection: str  # LLM summarized experience/lesson
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    tags: List[str] = []

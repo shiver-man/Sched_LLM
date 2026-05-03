@@ -106,6 +106,11 @@ def build_initial_state(req: ScheduleRequest) -> Dict[str, Any]:
             "waiting_machine": 0,
             "waiting_repair": 0,
         },
+        "idle_reason_durations": {
+            "waiting_transport": 0.0,
+            "waiting_machine": 0.0,
+            "waiting_repair": 0.0,
+        },
         "strategic_experience": req.strategic_experience,
         "metadata": req.metadata or {},
     }

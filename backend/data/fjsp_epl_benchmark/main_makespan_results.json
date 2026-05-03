@@ -1,0 +1,122 @@
+[
+  {
+    "group": "Brandimarte",
+    "case": "Mk01",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 154.0,
+    "traditional_rule": "SPT",
+    "traditional_makespan": 141.0,
+    "makespan_improve_pct": -9.219858156028367,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk02",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 104.6667,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 118.0,
+    "makespan_improve_pct": 11.29940677966101,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk03",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 414.1667,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 420.8333,
+    "makespan_improve_pct": 1.5841426997340793,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk04",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 273.6667,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 271.0,
+    "makespan_improve_pct": -0.9840221402213991,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk05",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 298.1667,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 307.6667,
+    "makespan_improve_pct": 3.087756978574542,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk06",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 507.6667,
+    "traditional_rule": "SPT",
+    "traditional_makespan": 437.0,
+    "makespan_improve_pct": -16.170869565217387,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk07",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 305.1667,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 315.3333,
+    "makespan_improve_pct": 3.2240806790783014,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk08",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 1077.5,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 1109.8333,
+    "makespan_improve_pct": 2.91334743695292,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk09",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 813.5,
+    "traditional_rule": "MWKR",
+    "traditional_makespan": 889.8333,
+    "makespan_improve_pct": 8.57838204077101,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  },
+  {
+    "group": "Brandimarte",
+    "case": "Mk10",
+    "framework_rule": "COOP_RH",
+    "framework_makespan": 789.0,
+    "traditional_rule": "SPT",
+    "traditional_makespan": 814.6667,
+    "makespan_improve_pct": 3.1505767941662515,
+    "framework_is_complete": true,
+    "traditional_is_complete": true,
+    "http_status_full": 200
+  }
+]

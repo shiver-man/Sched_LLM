@@ -1,0 +1,137 @@
+[
+  {
+    "scale": 5,
+    "trial": 0,
+    "trad_mk": 628.0,
+    "fw_mk": 628.0,
+    "trad_sync": 580.0,
+    "fw_sync": 580.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 5,
+    "trial": 1,
+    "trad_mk": 628.0,
+    "fw_mk": 628.0,
+    "trad_sync": 580.0,
+    "fw_sync": 580.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 5,
+    "trial": 2,
+    "trad_mk": 628.0,
+    "fw_mk": 628.0,
+    "trad_sync": 580.0,
+    "fw_sync": 580.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 5,
+    "trial": 3,
+    "trad_mk": 628.0,
+    "fw_mk": 628.0,
+    "trad_sync": 580.0,
+    "fw_sync": 580.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 5,
+    "trial": 4,
+    "trad_mk": 628.0,
+    "fw_mk": 628.0,
+    "trad_sync": 580.0,
+    "fw_sync": 580.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 15,
+    "trial": 0,
+    "trad_mk": 1888.0,
+    "fw_mk": 1888.0,
+    "trad_sync": 1840.0,
+    "fw_sync": 1840.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 15,
+    "trial": 1,
+    "trad_mk": 1888.0,
+    "fw_mk": 1888.0,
+    "trad_sync": 1840.0,
+    "fw_sync": 1840.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 15,
+    "trial": 2,
+    "trad_mk": 1888.0,
+    "fw_mk": 1888.0,
+    "trad_sync": 1840.0,
+    "fw_sync": 1840.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 15,
+    "trial": 3,
+    "trad_mk": 1888.0,
+    "fw_mk": 1888.0,
+    "trad_sync": 1840.0,
+    "fw_sync": 1840.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 15,
+    "trial": 4,
+    "trad_mk": 1888.0,
+    "fw_mk": 1888.0,
+    "trad_sync": 1840.0,
+    "fw_sync": 1840.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 30,
+    "trial": 0,
+    "trad_mk": 3778.0,
+    "fw_mk": 3778.0,
+    "trad_sync": 3730.0,
+    "fw_sync": 3730.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 30,
+    "trial": 1,
+    "trad_mk": 3778.0,
+    "fw_mk": 3778.0,
+    "trad_sync": 3730.0,
+    "fw_sync": 3730.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 30,
+    "trial": 2,
+    "trad_mk": 3778.0,
+    "fw_mk": 3778.0,
+    "trad_sync": 3730.0,
+    "fw_sync": 3730.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 30,
+    "trial": 3,
+    "trad_mk": 3778.0,
+    "fw_mk": 3778.0,
+    "trad_sync": 3730.0,
+    "fw_sync": 3730.0,
+    "improve_mk": 0.0
+  },
+  {
+    "scale": 30,
+    "trial": 4,
+    "trad_mk": 3778.0,
+    "fw_mk": 3778.0,
+    "trad_sync": 3730.0,
+    "fw_sync": 3730.0,
+    "improve_mk": 0.0
+  }
+]

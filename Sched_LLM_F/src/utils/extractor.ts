@@ -120,7 +120,7 @@ export function extractScheduleBaseData(input: string): ScheduleBaseData {
       factory_id: `factory_${pickWorkshop(normalized) ?? "001"}`,
       factory_name: pickFactoryName(normalized),
       planning_horizon: planningHorizon,
-      current_time: new Date().toISOString()
+      current_time: 0 // 与后端示例对齐，使用 0 或数字
     },
     shop_floor: {
       machines,

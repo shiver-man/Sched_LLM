@@ -1,0 +1,674 @@
+{
+  "Brandimarte": [
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk01.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "SPT",
+      "best_makespan": 141.0,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 303,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 154.0,
+        "utilization": 0.2229,
+        "tardiness": 0.0,
+        "transport_time": 287.3333,
+        "vehicle_utilization": 0.9329,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l3->l1",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 113.0,
+          "waiting_machine": 142.3333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 255.3333,
+        "events": 55,
+        "is_complete": true,
+        "total_ops_expected": 55
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "SPT",
+        "makespan": 141.0,
+        "utilization": 0.2388,
+        "tardiness": 0.0,
+        "transport_time": 257.1667,
+        "vehicle_utilization": 0.9119,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l/u->l6",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 73.6667,
+          "waiting_machine": 98.1667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 171.8334,
+        "events": 55,
+        "is_complete": true,
+        "total_ops_expected": 55
+      },
+      "makespan_improve_pct": -9.219858156028367
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk02.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 104.6667,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 326,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 104.6667,
+        "utilization": 0.3551,
+        "tardiness": 0.0,
+        "transport_time": 190.8333,
+        "vehicle_utilization": 0.9116,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l/u->l5",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 63.0,
+          "waiting_machine": 81.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 144.6667,
+        "events": 58,
+        "is_complete": true,
+        "total_ops_expected": 58
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 118.0,
+        "utilization": 0.3192,
+        "tardiness": 0.0,
+        "transport_time": 207.6667,
+        "vehicle_utilization": 0.8799,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l/u->l1",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 74.3333,
+          "waiting_machine": 88.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 163.0,
+        "events": 58,
+        "is_complete": true,
+        "total_ops_expected": 58
+      },
+      "makespan_improve_pct": 11.29940677966101
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk03.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 414.1667,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 329,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 414.1667,
+        "utilization": 0.4023,
+        "tardiness": 0.0,
+        "transport_time": 804.6667,
+        "vehicle_utilization": 0.9714,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l6->l5",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 350.5,
+          "waiting_machine": 378.0,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 728.5,
+        "events": 150,
+        "is_complete": true,
+        "total_ops_expected": 150
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 420.8333,
+        "utilization": 0.4441,
+        "tardiness": 0.0,
+        "transport_time": 804.3333,
+        "vehicle_utilization": 0.9556,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l5->l3",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 342.0,
+          "waiting_machine": 395.0,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 737.0,
+        "events": 150,
+        "is_complete": true,
+        "total_ops_expected": 150
+      },
+      "makespan_improve_pct": 1.5841426997340793
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk04.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "MWKR",
+      "best_makespan": 271.0,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 305,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 273.6667,
+        "utilization": 0.1781,
+        "tardiness": 0.0,
+        "transport_time": 535.8333,
+        "vehicle_utilization": 0.979,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l/u->l6",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 250.0,
+          "waiting_machine": 262.5,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 512.5,
+        "events": 90,
+        "is_complete": true,
+        "total_ops_expected": 90
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 271.0,
+        "utilization": 0.1836,
+        "tardiness": 0.0,
+        "transport_time": 526.1667,
+        "vehicle_utilization": 0.9708,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l/u->l5",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 254.8333,
+          "waiting_machine": 252.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 507.5,
+        "events": 90,
+        "is_complete": true,
+        "total_ops_expected": 90
+      },
+      "makespan_improve_pct": -0.9840221402213991
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk05.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 298.1667,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 313,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 298.1667,
+        "utilization": 0.6037,
+        "tardiness": 0.0,
+        "transport_time": 375.8333,
+        "vehicle_utilization": 0.6302,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l2->l1",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 25.6667,
+          "waiting_machine": 284.0,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 309.6667,
+        "events": 106,
+        "is_complete": true,
+        "total_ops_expected": 106
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 307.6667,
+        "utilization": 0.5924,
+        "tardiness": 0.0,
+        "transport_time": 427.1667,
+        "vehicle_utilization": 0.6942,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l2->l4",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 27.5,
+          "waiting_machine": 295.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 323.1667,
+        "events": 106,
+        "is_complete": true,
+        "total_ops_expected": 106
+      },
+      "makespan_improve_pct": 3.087756978574542
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk06.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "SPT",
+      "best_makespan": 437.0,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 303,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 507.6667,
+        "utilization": 0.0766,
+        "tardiness": 0.0,
+        "transport_time": 1006.6667,
+        "vehicle_utilization": 0.9915,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l1->l7",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 497.3333,
+          "waiting_machine": 117.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 615.0,
+        "events": 150,
+        "is_complete": true,
+        "total_ops_expected": 150
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "SPT",
+        "makespan": 437.0,
+        "utilization": 0.0946,
+        "tardiness": 0.0,
+        "transport_time": 740.8333,
+        "vehicle_utilization": 0.8476,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l1->l3",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 321.0,
+          "waiting_machine": 86.6667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 407.6667,
+        "events": 150,
+        "is_complete": true,
+        "total_ops_expected": 150
+      },
+      "makespan_improve_pct": -16.170869565217387
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk07.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 305.1667,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 300,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 305.1667,
+        "utilization": 0.6305,
+        "tardiness": 0.0,
+        "transport_time": 393.0,
+        "vehicle_utilization": 0.6439,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l/u->l2",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 30.6667,
+          "waiting_machine": 295.8333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 326.5,
+        "events": 100,
+        "is_complete": true,
+        "total_ops_expected": 100
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 315.3333,
+        "utilization": 0.633,
+        "tardiness": 0.0,
+        "transport_time": 442.3333,
+        "vehicle_utilization": 0.7014,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l/u->l5",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 43.6667,
+          "waiting_machine": 301.3333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 345.0,
+        "events": 100,
+        "is_complete": true,
+        "total_ops_expected": 100
+      },
+      "makespan_improve_pct": 3.2240806790783014
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk08.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 1077.5,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 313,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 1077.5,
+        "utilization": 0.2492,
+        "tardiness": 0.0,
+        "transport_time": 1902.0,
+        "vehicle_utilization": 0.8826,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l1->l10",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 808.1667,
+          "waiting_machine": 1051.8333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1860.0,
+        "events": 225,
+        "is_complete": true,
+        "total_ops_expected": 225
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 1109.8333,
+        "utilization": 0.2469,
+        "tardiness": 0.0,
+        "transport_time": 2000.1667,
+        "vehicle_utilization": 0.9011,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l5->l1",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 842.6667,
+          "waiting_machine": 1078.0,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1920.6667,
+        "events": 225,
+        "is_complete": true,
+        "total_ops_expected": 225
+      },
+      "makespan_improve_pct": 2.91334743695292
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk09.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 813.5,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 298,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 813.5,
+        "utilization": 0.3246,
+        "tardiness": 0.0,
+        "transport_time": 1571.5,
+        "vehicle_utilization": 0.9659,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l5->l3",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 760.3333,
+          "waiting_machine": 786.1667,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1546.5,
+        "events": 240,
+        "is_complete": true,
+        "total_ops_expected": 240
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "MWKR",
+        "makespan": 889.8333,
+        "utilization": 0.3147,
+        "tardiness": 0.0,
+        "transport_time": 1714.1667,
+        "vehicle_utilization": 0.9632,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l1->l8",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 817.1667,
+          "waiting_machine": 864.8333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1682.0,
+        "events": 240,
+        "is_complete": true,
+        "total_ops_expected": 240
+      },
+      "makespan_improve_pct": 8.57838204077101
+    },
+    {
+      "case": "c:\\Users\\shiver\\Desktop\\Sched_LLM\\backend\\FJSP_epl\\FJSP算例\\Monaldo\\Fjsp\\Job_Data\\Brandimarte_Data\\Text\\Mk10.fjs",
+      "http_status": null,
+      "http_status_full": 200,
+      "best_rule": "COOP_RH",
+      "best_makespan": 789.0,
+      "num_schemes": 4,
+      "ga_makespan": null,
+      "ga_complete": null,
+      "llm_brief_len": 312,
+      "framework_rule": "COOP_RH",
+      "framework_metrics": {
+        "category": "Heuristic",
+        "rule": "COOP_RH",
+        "makespan": 789.0,
+        "utilization": 0.1883,
+        "tardiness": 0.0,
+        "transport_time": 1566.8333,
+        "vehicle_utilization": 0.9929,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v1",
+        "busiest_path": "l9->l5",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 780.5,
+          "waiting_machine": 661.3333,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1441.8333,
+        "events": 240,
+        "is_complete": true,
+        "total_ops_expected": 240
+      },
+      "traditional_best_metrics": {
+        "category": "Rule-based",
+        "rule": "SPT",
+        "makespan": 814.6667,
+        "utilization": 0.1829,
+        "tardiness": 0.0,
+        "transport_time": 1447.3333,
+        "vehicle_utilization": 0.8883,
+        "transport_wait_time": 0.0,
+        "busiest_vehicle": "v2",
+        "busiest_path": "l2->l1",
+        "path_conflicts": 0,
+        "machine_idle_reasons": {
+          "waiting_transport": 0,
+          "waiting_machine": 0,
+          "waiting_repair": 0
+        },
+        "machine_idle_reason_durations": {
+          "waiting_transport": 541.5,
+          "waiting_machine": 620.0,
+          "waiting_repair": 0.0
+        },
+        "sync_loss": 1161.5,
+        "events": 240,
+        "is_complete": true,
+        "total_ops_expected": 240
+      },
+      "makespan_improve_pct": 3.1505767941662515
+    }
+  ]
+}

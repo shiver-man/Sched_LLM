@@ -8,7 +8,16 @@ from app.core.engine import EventEngine
 from app.core.evaluator import Evaluator
 
 class GeneticAlgorithm:
-    def __init__(self, state: Dict[str, Any], pop_size: int = 50, generations: int = 20, debug: bool = False):
+    def __init__(
+        self,
+        state: Dict[str, Any],
+        pop_size: int = 50,
+        generations: int = 20,
+        debug: bool = False,
+        use_tabu_seed: bool = False,
+        tabu_iters: int = 30,
+        tabu_tenure: int = 12,
+    ):
         # 深度复制状态，防止外部修改
         self.base_state = copy.deepcopy(state)
         self.pop_size = pop_size
@@ -17,6 +26,9 @@ class GeneticAlgorithm:
         self.machines = self.base_state["machines"]
         self.vehicles = self.base_state["vehicles"]
         self.debug = debug
+        self.use_tabu_seed = use_tabu_seed
+        self.tabu_iters = tabu_iters
+        self.tabu_tenure = tabu_tenure
         
         # 统计总工序数和候选机器范围
         self.op_list = []
@@ -29,8 +41,9 @@ class GeneticAlgorithm:
         self.eval_max_steps = max(1000, self.num_total_ops * 80)
         self.job_key = {self._norm(j["job_id"]): idx for idx, j in enumerate(self.jobs)}
         self.generation_history: List[Dict[str, Any]] = []
+        self.num_vehicles = max(1, len(self.vehicles))
         
-    def _create_chromosome(self) -> Tuple[List[int], List[int]]:
+    def _create_chromosome(self) -> Tuple[List[int], List[int], List[int]]:
         """
         创建染色体：OS (Operation Sequence) 和 MS (Machine Selection)
         """
@@ -43,9 +56,11 @@ class GeneticAlgorithm:
         # MS: 每一位代表对应工序选择候选机器列表中的第几个机器
         ms = [random.randint(0, r - 1) for r in self.ms_ranges]
         
-        return os, ms
+        # VS: 每一位代表运输优先车辆索引（仅在需要运输时生效）
+        vs = [random.randint(0, self.num_vehicles - 1) for _ in range(self.num_total_ops)]
+        return os, ms, vs
 
-    def _create_seed_chromosome(self) -> Tuple[List[int], List[int]]:
+    def _create_seed_chromosome(self) -> Tuple[List[int], List[int], List[int]]:
         ordered = sorted(
             list(enumerate(self.jobs)),
             key=lambda x: (x[1].get("release_time", 0.0), x[0])
@@ -64,7 +79,8 @@ class GeneticAlgorithm:
                         best_idx = idx
                         best_pt = cm["process_time"]
                 ms.append(best_idx)
-        return os, ms
+        vs = [i % self.num_vehicles for i in range(self.num_total_ops)]
+        return os, ms, vs
 
     @staticmethod
     def _norm(value: Any) -> str:
@@ -85,16 +101,101 @@ class GeneticAlgorithm:
                 ms_idx += 1
         return ms_map
 
-    def _evaluate(self, chromosome: Tuple[List[int], List[int]]) -> float:
+    def _decode_vs_map(self, vs: List[int]) -> Dict[Tuple[str, str], int]:
+        vs_map = {}
+        idx = 0
+        for job in self.jobs:
+            for op in job["operations"]:
+                choose_idx = vs[idx] if idx < len(vs) else 0
+                if choose_idx < 0 or choose_idx >= self.num_vehicles:
+                    choose_idx = 0
+                vs_map[(self._norm(job["job_id"]), self._norm(op["op_id"]))] = choose_idx
+                idx += 1
+        return vs_map
+
+    def _tabu_optimize_seed(self, os: List[int], ms: List[int]) -> Tuple[List[int], List[int]]:
+        """
+        TS 预优化：仅优化生产编码 OS+MS，产出高质量 seed。
+        """
+        current_os = copy.deepcopy(os)
+        current_ms = copy.deepcopy(ms)
+        current_vs = [0 for _ in range(self.num_total_ops)]
+        current_fit = self._evaluate((current_os, current_ms, current_vs))
+        best_os, best_ms, best_fit = copy.deepcopy(current_os), copy.deepcopy(current_ms), current_fit
+
+        tabu_list: Dict[str, int] = {}
+        rng = random.Random(42)
+
+        for it in range(self.tabu_iters):
+            candidates: List[Tuple[float, Tuple[str, int, int], List[int], List[int]]] = []
+
+            # OS 邻域：随机交换两个位置
+            for _ in range(6):
+                if len(current_os) < 2:
+                    break
+                i, j = rng.sample(range(len(current_os)), 2)
+                n_os = copy.deepcopy(current_os)
+                n_os[i], n_os[j] = n_os[j], n_os[i]
+                move = ("os_swap", min(i, j), max(i, j))
+                move_key = f"{move[0]}:{move[1]}:{move[2]}"
+                fit = self._evaluate((n_os, current_ms, current_vs))
+                if move_key not in tabu_list or fit > best_fit:
+                    candidates.append((fit, move, n_os, current_ms))
+
+            # MS 邻域：随机改一个工序的机器选择
+            for _ in range(6):
+                if not current_ms:
+                    break
+                idx = rng.randint(0, len(current_ms) - 1)
+                range_max = self.ms_ranges[idx]
+                if range_max <= 1:
+                    continue
+                new_val = rng.randint(0, range_max - 1)
+                if new_val == current_ms[idx]:
+                    continue
+                n_ms = copy.deepcopy(current_ms)
+                n_ms[idx] = new_val
+                move = ("ms_change", idx, new_val)
+                move_key = f"{move[0]}:{move[1]}:{move[2]}"
+                fit = self._evaluate((current_os, n_ms, current_vs))
+                if move_key not in tabu_list or fit > best_fit:
+                    candidates.append((fit, move, current_os, n_ms))
+
+            if not candidates:
+                continue
+
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            best_neighbor_fit, best_move, best_neighbor_os, best_neighbor_ms = candidates[0]
+            current_os = copy.deepcopy(best_neighbor_os)
+            current_ms = copy.deepcopy(best_neighbor_ms)
+            current_fit = best_neighbor_fit
+
+            if current_fit > best_fit:
+                best_fit = current_fit
+                best_os = copy.deepcopy(current_os)
+                best_ms = copy.deepcopy(current_ms)
+
+            # 维护 tabu tenure
+            for key in list(tabu_list.keys()):
+                tabu_list[key] -= 1
+                if tabu_list[key] <= 0:
+                    del tabu_list[key]
+            move_key = f"{best_move[0]}:{best_move[1]}:{best_move[2]}"
+            tabu_list[move_key] = self.tabu_tenure
+
+        return best_os, best_ms
+
+    def _evaluate(self, chromosome: Tuple[List[int], List[int], List[int]]) -> float:
         """
         适应度评估：运行离散事件引擎
         """
-        os, ms = chromosome
+        os, ms, vs = chromosome
         
         # 构建一个基于染色体的策略函数
         # GA 的 OS/MS 指导调度逻辑
         # 预先映射 MS 到每个工序的机器
         ms_map = self._decode_ms_map(ms)
+        vs_map = self._decode_vs_map(vs)
 
         def ga_policy(state):
             # 获取当前可派工任务
@@ -132,13 +233,19 @@ class GeneticAlgorithm:
                             idle_vehicles = [v for v in state["vehicles"] if v["status"] == "idle"]
                             if not idle_vehicles:
                                 continue
-                            from app.core.scheduler import PDR
-                            vehicle_id = min(
-                                idle_vehicles,
-                                key=lambda v: PDR._transport_time(
-                                    state, job_in_state["current_location"], machine["location"], v
-                                ),
-                            )["vehicle_id"]
+                            pref_v_idx = vs_map.get((target_job_key, self._norm(current_op["op_id"])), 0)
+                            pref_vehicle_id = self.vehicles[pref_v_idx % self.num_vehicles]["vehicle_id"]
+                            pref_vehicle = next((v for v in idle_vehicles if v["vehicle_id"] == pref_vehicle_id), None)
+                            if pref_vehicle is not None:
+                                vehicle_id = pref_vehicle["vehicle_id"]
+                            else:
+                                from app.core.scheduler import PDR
+                                vehicle_id = min(
+                                    idle_vehicles,
+                                    key=lambda v: PDR._transport_time(
+                                        state, job_in_state["current_location"], machine["location"], v
+                                    ),
+                                )["vehicle_id"]
                         return {
                             "job_id": target_job_id,
                             "op_id": current_op["op_id"],
@@ -171,8 +278,12 @@ class GeneticAlgorithm:
         """
         # 初始化种群
         population = [self._create_chromosome() for _ in range(max(0, self.pop_size - 2))]
-        population.append(self._create_seed_chromosome())
-        population.append(self._mutate(copy.deepcopy(self._create_seed_chromosome())))
+        seed_os, seed_ms, seed_vs = self._create_seed_chromosome()
+        if self.use_tabu_seed:
+            seed_os, seed_ms = self._tabu_optimize_seed(seed_os, seed_ms)
+        seed = (seed_os, seed_ms, seed_vs)
+        population.append(seed)
+        population.append(self._mutate(copy.deepcopy(seed)))
         
         best_chrom = None
         best_fitness = -1e12
@@ -225,8 +336,9 @@ class GeneticAlgorithm:
         # 最终结果
         if best_chrom:
             # 重新运行一遍获取完整计划
-            os, ms = best_chrom
+            os, ms, vs = best_chrom
             ms_map = self._decode_ms_map(ms)
+            vs_map = self._decode_vs_map(vs)
 
             def final_ga_policy(state):
                 from app.models.state import get_dispatchable_jobs
@@ -255,13 +367,19 @@ class GeneticAlgorithm:
                                 idle_vehicles = [v for v in state["vehicles"] if v["status"] == "idle"]
                                 if not idle_vehicles:
                                     continue
-                                from app.core.scheduler import PDR
-                                vehicle_id = min(
-                                    idle_vehicles,
-                                    key=lambda v: PDR._transport_time(
-                                        state, job_in_state["current_location"], machine["location"], v
-                                    ),
-                                )["vehicle_id"]
+                                pref_v_idx = vs_map.get((target_job_key, self._norm(current_op["op_id"])), 0)
+                                pref_vehicle_id = self.vehicles[pref_v_idx % self.num_vehicles]["vehicle_id"]
+                                pref_vehicle = next((v for v in idle_vehicles if v["vehicle_id"] == pref_vehicle_id), None)
+                                if pref_vehicle is not None:
+                                    vehicle_id = pref_vehicle["vehicle_id"]
+                                else:
+                                    from app.core.scheduler import PDR
+                                    vehicle_id = min(
+                                        idle_vehicles,
+                                        key=lambda v: PDR._transport_time(
+                                            state, job_in_state["current_location"], machine["location"], v
+                                        ),
+                                    )["vehicle_id"]
                             return {
                                 "job_id": target_job_id,
                                 "op_id": current_op["op_id"],
@@ -319,6 +437,7 @@ class GeneticAlgorithm:
                     "best_fitness": round(float(best_fitness), 6),
                     "best_chromosome_os": os,
                     "best_chromosome_ms": ms,
+                    "best_chromosome_vs": vs,
                     "best_machine_mapping": best_ms_map,
                     "generation_history": self.generation_history,
                     "dispatch_trace": dispatch_trace,
@@ -344,8 +463,8 @@ class GeneticAlgorithm:
         return pop[best_idx]
 
     def _crossover(self, p1, p2):
-        os1, ms1 = p1
-        os2, ms2 = p2
+        os1, ms1, vs1 = p1
+        os2, ms2, vs2 = p2
         
         # OS Crossover: POX (Precedence Operation Crossover)
         # 简化：随机切片交换并修复重复
@@ -374,10 +493,15 @@ class GeneticAlgorithm:
         c_ms1 = ms1[:cut_ms] + ms2[cut_ms:]
         c_ms2 = ms2[:cut_ms] + ms1[cut_ms:]
         
-        return (c_os1, c_ms1), (c_os2, c_ms2)
+        # VS Crossover: 单点交叉
+        cut_vs = random.randint(1, len(vs1) - 1) if len(vs1) > 1 else 1
+        c_vs1 = vs1[:cut_vs] + vs2[cut_vs:]
+        c_vs2 = vs2[:cut_vs] + vs1[cut_vs:]
+
+        return (c_os1, c_ms1, c_vs1), (c_os2, c_ms2, c_vs2)
 
     def _mutate(self, chrom):
-        os, ms = chrom
+        os, ms, vs = chrom
         # OS Mutation: 交换两个位置
         if random.random() < 0.1 and len(os) > 1:
             idx1, idx2 = random.sample(range(len(os)), 2)
@@ -390,4 +514,9 @@ class GeneticAlgorithm:
             range_max = self.ms_ranges[idx]
             ms[idx] = random.randint(0, range_max - 1)
         
-        return os, ms
+        # VS Mutation: 随机改变一个工序偏好车辆
+        if random.random() < 0.1 and len(vs) > 0:
+            idx = random.randint(0, len(vs) - 1)
+            vs[idx] = random.randint(0, self.num_vehicles - 1)
+
+        return os, ms, vs

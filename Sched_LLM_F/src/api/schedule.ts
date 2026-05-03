@@ -1,4 +1,4 @@
-import { requestJson, getWsUrl } from "./client";
+import { requestJson } from "./client";
 import type { PlanEndpoint, ScheduleBaseData, ScheduleMetrics, ScheduleResult, UnifiedRunMode } from "../types";
 
 interface BackendResponse {
@@ -10,6 +10,13 @@ interface BackendResponse {
   strategies?: unknown;
   comparison?: unknown;
   summary?: unknown;
+  experience_id?: string;
+  reflection?: string;
+  llm_readable_brief?: string;
+  summary_comparison?: unknown;
+  detailed_schemes?: unknown;
+  gantt_chart_base64?: string;
+  status?: string;
   metrics?: {
     makespan?: number;
     vehicle_utilization?: number;
@@ -69,11 +76,13 @@ function toReadableText(value: unknown): string {
   if (!lines.length) {
     return "后端返回了空内容。";
   }
-  const text = lines.join("\n");
-  return text.length > 8000 ? `${text.slice(0, 8000)}\n...（内容过长，已截断）` : text;
+  return lines.join("\n");
 }
 
 function resolveReplyText(data: BackendResponse): string {
+  if (data.llm_readable_brief) {
+    return normalizeText(data.llm_readable_brief);
+  }
   const directText = [data.message, data.reply, data.result].find((item) => typeof item === "string" && item.trim());
   if (directText) {
     const raw = directText.trim();
@@ -111,14 +120,32 @@ function pickNumberByPath(data: unknown, paths: string[][]): number | undefined 
   return undefined;
 }
 
+function pickBestSummaryRow(summary: unknown): Record<string, unknown> | undefined {
+  if (!Array.isArray(summary)) {
+    return undefined;
+  }
+
+  const rows = summary.filter((item): item is Record<string, unknown> => !!item && typeof item === "object");
+  if (!rows.length) {
+    return undefined;
+  }
+
+  const completeRow = rows.find((item) => item.is_complete === true);
+  return completeRow ?? rows[0];
+}
+
 function normalizeMetrics(data: BackendResponse): ScheduleMetrics | undefined {
+  const bestSummaryRow = pickBestSummaryRow(data.summary_comparison);
   const makespan = pickNumberByPath(data, [
     ["metrics", "makespan"],
     ["summary", "metrics", "makespan"],
     ["comparison", "best_metrics", "makespan"],
     ["comparison", "metrics", "makespan"],
+    ["best_strategy_result", "metrics", "makespan"],
+    ["best_result", "metrics", "makespan"],
+    ["best_metrics", "makespan"],
     ["makespan"]
-  ]);
+  ]) ?? pickNumberByPath(bestSummaryRow, [["makespan"]]);
   const vehicleUtilization = pickNumberByPath(data, [
     ["metrics", "vehicle_utilization"],
     ["metrics", "vehicleUtilization"],
@@ -126,8 +153,16 @@ function normalizeMetrics(data: BackendResponse): ScheduleMetrics | undefined {
     ["summary", "metrics", "vehicleUtilization"],
     ["comparison", "best_metrics", "vehicle_utilization"],
     ["comparison", "best_metrics", "vehicleUtilization"],
+    ["best_strategy_result", "metrics", "vehicle_utilization"],
+    ["best_strategy_result", "metrics", "vehicleUtilization"],
+    ["best_result", "metrics", "vehicle_utilization"],
+    ["best_metrics", "vehicle_utilization"],
     ["vehicle_utilization"],
     ["vehicleUtilization"]
+  ]) ?? pickNumberByPath(bestSummaryRow, [
+    ["vehicle_utilization"],
+    ["vehicleUtilization"],
+    ["utilization"]
   ]);
   const transportWaitTime = pickNumberByPath(data, [
     ["metrics", "transport_wait_time"],
@@ -136,9 +171,13 @@ function normalizeMetrics(data: BackendResponse): ScheduleMetrics | undefined {
     ["summary", "metrics", "transportWaitTime"],
     ["comparison", "best_metrics", "transport_wait_time"],
     ["comparison", "best_metrics", "transportWaitTime"],
+    ["best_strategy_result", "metrics", "transport_wait_time"],
+    ["best_strategy_result", "metrics", "transportWaitTime"],
+    ["best_result", "metrics", "transport_wait_time"],
+    ["best_metrics", "transport_wait_time"],
     ["transport_wait_time"],
     ["transportWaitTime"]
-  ]);
+  ]) ?? pickNumberByPath(bestSummaryRow, [["transport_wait_time"], ["transportWaitTime"]]);
 
   const result: ScheduleMetrics = {};
   if (Number.isFinite(makespan)) {
@@ -159,45 +198,44 @@ function normalizeMetrics(data: BackendResponse): ScheduleMetrics | undefined {
 interface SendTextOptions {
   mode?: UnifiedRunMode;
   ppoPolicyId?: string;
+  useLlm?: boolean;
 }
 
 function buildUnifiedPayload(prompt: string, baseData?: ScheduleBaseData, options?: SendTextOptions) {
-  return {
+  const payload = {
     mode: options?.mode ?? "compare_all",
     factory_info: baseData?.factory_info,
     shop_floor: baseData?.shop_floor,
-    jobs: baseData?.jobs,
+    jobs: baseData?.jobs || [],
     simulation_config: baseData?.simulation_config,
     uncertainty_config: baseData?.uncertainty_config,
     dispatching_config: {
-      ppo_policy_id: options?.ppoPolicyId?.trim() || "latest"
+      ppo_policy_id: options?.ppoPolicyId?.trim() || baseData?.dispatching_config?.ppo_policy_id || "latest"
     },
+    llm_config: {
+      use_ollama: options?.useLlm ?? baseData?.llm_config?.use_ollama ?? true
+    },
+    return_raw_json: baseData?.return_raw_json ?? true,
     source_text: baseData?.source_text ?? prompt,
     algorithm_preference: baseData?.algorithm_preference,
     prompt,
     message: prompt,
     query: prompt
   };
+
+  console.log("Sending payload to backend:", payload);
+  return payload;
 }
 
 export async function sendTextToSchedule(
-  endpoint: PlanEndpoint,
+  _endpoint: PlanEndpoint,
   prompt: string,
   baseData?: ScheduleBaseData,
   options?: SendTextOptions
 ): Promise<ScheduleResult> {
-  const payload =
-    endpoint === "/run"
-      ? buildUnifiedPayload(prompt, baseData, options)
-      : {
-          prompt,
-          message: prompt,
-          query: prompt,
-          baseData,
-          basicData: baseData,
-          extracted: baseData
-        };
-  const data = await requestJson<BackendResponse>(endpoint, {
+  const payload = buildUnifiedPayload(prompt, baseData, options);
+
+  const data = await requestJson<BackendResponse>("/run", {
     method: "POST",
     body: JSON.stringify(payload),
     headers: {
@@ -209,6 +247,12 @@ export async function sendTextToSchedule(
     replyText: resolveReplyText(data),
     plan: data.plan ?? data.schedule ?? data.strategies ?? data.comparison ?? data.summary ?? data,
     metrics: normalizeMetrics(data),
+    experience_id: data.experience_id,
+    reflection: data.reflection,
+    llm_readable_brief: data.llm_readable_brief,
+    summary_comparison: data.summary_comparison,
+    detailed_schemes: data.detailed_schemes,
+    gantt_chart_base64: data.gantt_chart_base64,
     raw: data
   };
 }
@@ -229,12 +273,4 @@ export async function uploadImage(file: File): Promise<ScheduleResult> {
     metrics: normalizeMetrics(data),
     raw: data
   };
-}
-
-export function createProgressSocket(onMessage: (value: string) => void): WebSocket {
-  const socket = new WebSocket(getWsUrl("/ws/progress"));
-  socket.onmessage = (event) => {
-    onMessage(String(event.data ?? ""));
-  };
-  return socket;
 }

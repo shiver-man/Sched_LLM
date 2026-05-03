@@ -36,6 +36,11 @@ class Simulator:
         )
 
         if not future_times:
+            # 如果没有找到明确的未来时间点，但仍有未完成工件，强制推进一步
+            # 防止仿真在 time=0 且所有事件都在 time=0 时陷入死循环或提前终止
+            if not all(j.get("finished") for j in state["jobs"]):
+                state["time"] += 1.0
+                return True
             return False
 
         state["time"] = min(future_times)

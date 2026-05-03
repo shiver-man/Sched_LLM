@@ -1,0 +1,56 @@
+[
+  {
+    "case": "valve_payload_1x.json",
+    "jobs": 2,
+    "runtime_sec": 0.01,
+    "traditional": {
+      "rule": "SPT",
+      "makespan": 124.0,
+      "transport_time": 7.0,
+      "sync_loss": 34.0
+    },
+    "framework": {
+      "rule": "COOP_RH",
+      "makespan": 124.0,
+      "transport_time": 7.0,
+      "sync_loss": 34.0
+    },
+    "improvement_pct": 0.0
+  },
+  {
+    "case": "valve_payload_5x.json",
+    "jobs": 10,
+    "runtime_sec": 0.02,
+    "traditional": {
+      "rule": "SPT",
+      "makespan": 628.0,
+      "transport_time": 43.0,
+      "sync_loss": 580.0
+    },
+    "framework": {
+      "rule": "COOP_RH",
+      "makespan": 628.0,
+      "transport_time": 43.0,
+      "sync_loss": 580.0
+    },
+    "improvement_pct": 0.0
+  },
+  {
+    "case": "valve_payload_10x.json",
+    "jobs": 20,
+    "runtime_sec": 0.05,
+    "traditional": {
+      "rule": "SPT",
+      "makespan": 1258.0,
+      "transport_time": 88.0,
+      "sync_loss": 1210.0
+    },
+    "framework": {
+      "rule": "COOP_RH",
+      "makespan": 1258.0,
+      "transport_time": 88.0,
+      "sync_loss": 1210.0
+    },
+    "improvement_pct": 0.0
+  }
+]

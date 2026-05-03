@@ -52,39 +52,35 @@ async def run_unified_simulation(payload: Dict[str, Any]):
         platform = MultiStrategyScheduler(req, max_steps=max_steps)
         
         # 3. 执行多方案生成
-        # 即使 mode 为 ppo_plan，也建议返回完整对比以增加实验价值
-        # 但这里我们遵循用户逻辑：compare_all 为全量，其余为特定模式（此处简化为全部走全量）
         response = platform.execute_all(ppo_policy_id=ppo_id)
+        
+        # 控制是否向前端发送冗长的 JSON 数据 (默认不发送，以保证响应简洁)
+        return_raw_json = bool(payload.get("return_raw_json", False))
+        
+        # 提取最佳策略的排产方案并生成甘特图
+        best = response.summary_comparison[0] if response.summary_comparison else {}
+        best_rule = best.get("rule")
+        best_scheme = next((s for s in response.detailed_schemes if s.rule == best_rule), None)
+        
+        if best_scheme:
+            from app.utils.gantt_chart import generate_gantt_base64
+            plan_dicts = [step.model_dump() for step in best_scheme.plan]
+            # 生成甘特图并赋值到 response 中
+            response.gantt_chart_base64 = generate_gantt_base64(plan_dicts, title=f"Best Schedule Plan ({best_rule})")
+
         llm_cfg = payload.get("llm_config", {}) or {}
         use_ollama = bool(llm_cfg.get("use_ollama", True))
-        if use_ollama:
-            try:
-                best = response.summary_comparison[0] if response.summary_comparison else {}
-                best_rule = best.get("rule")
-                best_scheme = next((s for s in response.detailed_schemes if s.rule == best_rule), None)
-                llm_payload = build_llm_plan_payload(
-                    {
-                        "objective": "makespan",
-                        "best_rule": best_rule,
-                        "best_metrics": best_scheme.metrics.model_dump() if best_scheme else {},
-                        "best_schedule_plan": [x.model_dump() for x in (best_scheme.plan if best_scheme else [])],
-                        "all_rule_results": [
-                            {
-                                "rule": s.rule,
-                                "metrics": s.metrics.model_dump(),
-                                "plan": [p.model_dump() for p in s.plan],
-                            }
-                            for s in response.detailed_schemes
-                        ],
-                    }
-                )
-                prompt = build_ollama_plan_prompt(llm_payload)
-                model_text = ollama_client.generate(prompt)
-                if model_text and model_text.strip():
-                    response.llm_readable_brief = model_text.strip()
-            except Exception:
-                pass
         
+        # 将原来这里重复生成 brief 的逻辑去掉，因为 response.llm_readable_brief 已经在 execute_all 中由 _generate_llm_brief 统一生成了。
+        # 如果前端显式设置了 use_ollama=False，则覆盖掉已生成的 brief（虽然现在默认是全流程生成）
+        if not use_ollama:
+            pass # 可选：这里可以选择将其重置为本地短文本，但既然是“大模型驱动”系统，保留生成的更好。
+        
+        # 根据需求清理原始 JSON 内容，防止前端接收数据过载
+        if not return_raw_json:
+            # 清理详细排产方案以减小体积，但保留汇总数据供前端展示指标
+            response.detailed_schemes = None
+            
         return response
         
     except Exception as e:
@@ -236,15 +232,21 @@ def run_dynamic_scenarios(req: DynamicUncertaintyRequest):
             "all_rule_results": [{"rule": req.policy_type, "metrics": representative_scenario["metrics"], "plan": representative_scenario["plan"]}]
         })
         
-        return {
+        # 控制是否返回原始场景 JSON 数据
+        return_raw_json = payload.get("return_raw_json", False) if isinstance(payload, dict) else False
+
+        res = {
             "status": "success",
             "num_scenarios": req.num_scenarios,
             "policy_type": req.policy_type,
             "average_metrics": avg_metrics,
-            "llm_readable_payload": llm_payload,
             "llm_readable_brief": build_llm_plan_brief(llm_payload),
-            "scenarios": results
         }
+        if return_raw_json:
+            res["scenarios"] = results
+            res["llm_readable_payload"] = llm_payload
+            
+        return res
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -384,6 +386,25 @@ def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
     jobs_raw = payload.get("jobs", []) or []
     machines_raw = floor.get("machines", []) or []
     vehicles_raw = floor.get("vehicles", []) or []
+    if not jobs_raw:
+        default_machine_id = machines_raw[0]["machine_id"] if machines_raw else "M_DEFAULT"
+        jobs_raw = [
+            {
+                "job_id": "DEFAULT_JOB_001",
+                "release_time": 0.0,
+                "due_time": 10**9,
+                "initial_location": "L/U",
+                "current_location": "L/U",
+                "operations": [
+                    {
+                        "operation_id": "T1",
+                        "candidate_machines": [
+                            {"machine_id": default_machine_id, "processing_time": 1.0}
+                        ],
+                    }
+                ],
+            }
+        ]
 
     network = floor.get("transport_network", {}) or {}
     matrix = network.get("travel_time_matrix", {}) or {}
@@ -425,6 +446,7 @@ def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
                 "release_time": float(job.get("release_time", 0.0)),
                 "due_time": float(job.get("due_time", 10**9)),
                 "initial_location": initial_location,
+                "current_location": job.get("current_location") or initial_location,
             }
         )
 
@@ -456,6 +478,12 @@ def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     low, high = _extract_global_noise_range(payload)
     sim_cfg = payload.get("simulation_config", {}) or {}
+    planning_horizon = float(factory.get("planning_horizon", 0.0) or 0.0)
+    raw_current_time = factory.get("current_time", 0.0)
+    normalized_current_time = _to_float_time(raw_current_time, 0.0)
+    # 仿真时间基准应为“相对分钟”。若前端传入 ISO 绝对时间戳，数值通常远超规划窗，需回退到 0。
+    if planning_horizon > 0 and normalized_current_time > planning_horizon * 10:
+        normalized_current_time = 0.0
 
     return {
         "factory_info": factory,
@@ -463,7 +491,7 @@ def _normalize_rich_payload_for_ppo(payload: Dict[str, Any]) -> Dict[str, Any]:
         "machines": machines,
         "vehicles": vehicles,
         "layout": layout,
-        "current_time": _to_float_time(factory.get("current_time", 0.0), 0.0),
+        "current_time": normalized_current_time,
         "strategic_experience": "rich_json_dynamic_scheduling",
         "metadata": {
             "factory_id": factory.get("factory_id"),
@@ -832,6 +860,14 @@ def run_realtime_simulation(payload: Dict[str, Any]):
         # 1. 规范化输入
         req_data = _normalize_rich_payload_for_ppo(payload)
         req = ScheduleRequest(**req_data)
+        if not req.jobs:
+            raise HTTPException(status_code=400, detail="实时引擎输入无效：jobs 不能为空")
+        if not req.machines:
+            raise HTTPException(status_code=400, detail="实时引擎输入无效：machines 不能为空")
+        if not req.vehicles:
+            raise HTTPException(status_code=400, detail="实时引擎输入无效：vehicles 不能为空")
+        if sum(len(j.operations) for j in req.jobs) <= 0:
+            raise HTTPException(status_code=400, detail="实时引擎输入无效：工序总数必须大于 0")
         initial_state = build_initial_state(req)
         
         # 2. 定义调度策略 (使用 PPO)
@@ -890,6 +926,8 @@ def run_realtime_simulation(payload: Dict[str, Any]):
             "llm_readable_payload": llm_payload,
             "llm_readable_brief": build_llm_plan_brief(llm_payload)
         }
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -952,19 +990,62 @@ def run_comparative_study(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=f"多方案调度生成失败: {str(e)}")
 
 
-def reflect_on_trajectories(req: ScheduleRequest):
+from app.core.experience_store import experience_store
+from app.models.schema import (
+    ScheduleRequest, 
+    SimulationRuleRequest, 
+    SchedulePlanRequest, 
+    FailureRecoveryRequest,
+    MultiStrategyResponse,
+    PPOTrainRequest,
+    PPOPlanRequest,
+    DynamicUncertaintyRequest,
+    SchedulingExperience,
+    ScheduleMetrics
+)
+
+@router.post("/reflect")
+def reflect_on_trajectories(payload: Dict[str, Any]):
     try:
+        # 自动规范化输入，处理前端发送的复杂或非标准格式
+        req_data = _normalize_rich_payload_for_ppo(payload)
+        req = ScheduleRequest(**req_data)
+        
         trajectories = []
         for rule in ["SPT", "FIFO", "MWKR"]:
             tmp_req = SimulationRuleRequest(**req.model_dump(), rule=rule, max_steps=1000)
             result = run_trajectory(tmp_req)
             trajectories.append(result)
 
+        # 1. 生成 LLM 反思结果
         prompt = build_reflection_prompt(trajectories)
         reflection_result = ollama_client.generate(prompt)
+
+        # 2. 自动存入经验库（实现“蒸馏”总结经验）
+        best_traj = min(trajectories, key=lambda x: x["metrics"]["makespan"])
+        case_summary = {
+            "jobs_count": len(req.jobs),
+            "machines_count": len(req.machines),
+            "vehicles_count": len(req.vehicles),
+            "total_ops": sum(len(j.operations) for j in req.jobs)
+        }
+        
+        new_exp = SchedulingExperience(
+            case_summary=case_summary,
+            best_strategy=best_traj["rule"],
+            metrics=ScheduleMetrics(**best_traj["metrics"]),
+            reflection=reflection_result,
+            tags=[f"jobs_{len(req.jobs)}", f"machines_{len(req.machines)}"]
+        )
+        experience_store.save_experience(new_exp)
+
+        # 3. 返回结果（仅返回可读性反思与 ID，不返回冗长的轨迹 JSON）
         return {
-            "trajectories": trajectories,
+            "status": "success",
             "reflection": reflection_result,
+            "experience_id": new_exp.id
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"反思失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"反思并存入经验库失败: {str(e)}")

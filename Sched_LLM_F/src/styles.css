@@ -121,6 +121,65 @@ select {
 .message-bubble.assistant {
   background: #173b2f;
   border: 1px solid #2b7057;
+  max-width: 85%; /* 报告可能较长，稍微放宽宽度 */
+}
+
+/* Markdown 内容样式 */
+.markdown-content {
+  color: #e6edf7;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.markdown-content h3 {
+  color: #8ce3bc;
+  margin: 16px 0 8px;
+  font-size: 1.1em;
+  border-bottom: 1px solid rgba(140, 227, 188, 0.2);
+  padding-bottom: 4px;
+}
+
+.markdown-content p {
+  margin: 8px 0;
+}
+
+.markdown-content ul, .markdown-content ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+.markdown-content strong {
+  color: #8ce3bc;
+}
+
+.markdown-content code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* 加载气泡样式 */
+.loading-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.typing-dots {
+  display: flex;
+  align-items: center;
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #8ce3bc;
+  font-style: italic;
 }
 
 .message-text {
@@ -282,20 +341,90 @@ textarea:disabled {
 
 .plan-box,
 .base-data-box,
-.socket-feed {
-  margin: 0;
-  padding: 10px;
-  border-radius: 10px;
-  background: #0f1730;
-  border: 1px solid #2d3f66;
-  color: #d8e4ff;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 12px;
+.action-btn {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.socket-feed {
-  margin: 8px 12px 12px;
-  max-height: 120px;
-  overflow: auto;
+.special-highlight {
+  background: rgba(0, 255, 127, 0.1);
+  border-left: 3px solid #00ff7f;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.special-highlight strong {
+  color: #00ff7f;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.special-highlight pre {
+  margin: 0;
+  font-size: 11px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.scrollable-box {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* 甘特图样式 */
+.gantt-section {
+  margin: 15px 0;
+  background: #161b22;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #30363d;
+}
+
+.gantt-container {
+  width: 100%;
+  overflow-x: auto;
+  background: #fff; /* SVG 背景通常为白色 */
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.gantt-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  min-width: 600px; /* 保证在小屏幕上也能横向滚动查看细节 */
+}
+
+.gantt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(22, 27, 34, 0.5);
+  border-radius: 8px;
+  margin: 15px 0;
+  color: #8bb5ff;
+  font-size: 13px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(139, 181, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #8bb5ff;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

@@ -1,0 +1,416 @@
+{
+  "factory_info": {
+    "factory_id": "valve_case_5x",
+    "factory_name": "Valve Factory 5x",
+    "planning_horizon": 100000.0,
+    "current_time": 0.0
+  },
+  "shop_floor": {
+    "machines": [
+      {
+        "machine_id": "Y-005",
+        "type": "VERTICAL_CNC",
+        "location": "Y-005",
+        "status": "idle"
+      },
+      {
+        "machine_id": "Y-002",
+        "type": "HORIZONTAL_CNC",
+        "location": "Y-002",
+        "status": "idle"
+      }
+    ],
+    "vehicles": [
+      {
+        "vehicle_id": "V1",
+        "start_location": "RAW",
+        "speed": 1.0,
+        "load_unload_time": 1.0,
+        "status": "idle"
+      },
+      {
+        "vehicle_id": "V2",
+        "start_location": "RAW",
+        "speed": 1.0,
+        "load_unload_time": 1.0,
+        "status": "idle"
+      }
+    ],
+    "transport_network": {
+      "nodes": [
+        "RAW",
+        "Y-005",
+        "Y-002",
+        "INV-1",
+        "INV-2",
+        "INV-3"
+      ],
+      "edges": [
+        {
+          "from": "RAW",
+          "to": "Y-005",
+          "distance": 1.0
+        },
+        {
+          "from": "RAW",
+          "to": "Y-002",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-005",
+          "to": "INV-1",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-005",
+          "to": "INV-2",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-005",
+          "to": "INV-3",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-002",
+          "to": "INV-1",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-002",
+          "to": "INV-2",
+          "distance": 1.0
+        },
+        {
+          "from": "Y-002",
+          "to": "INV-3",
+          "distance": 1.0
+        }
+      ]
+    }
+  },
+  "jobs": [
+    {
+      "job_id": "SAFE_VALVE_01",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "安全阀",
+        "route_id": "SAFE_VALVE",
+        "instance_index": 1
+      },
+      "operations": [
+        {
+          "operation_id": "SAFE_VALVE_01_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 32.0
+            }
+          ]
+        },
+        {
+          "operation_id": "SAFE_VALVE_01_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-002",
+              "processing_time": 22.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "SAFE_VALVE_02",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "安全阀",
+        "route_id": "SAFE_VALVE",
+        "instance_index": 2
+      },
+      "operations": [
+        {
+          "operation_id": "SAFE_VALVE_02_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 32.0
+            }
+          ]
+        },
+        {
+          "operation_id": "SAFE_VALVE_02_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-002",
+              "processing_time": 22.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "SAFE_VALVE_03",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "安全阀",
+        "route_id": "SAFE_VALVE",
+        "instance_index": 3
+      },
+      "operations": [
+        {
+          "operation_id": "SAFE_VALVE_03_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 32.0
+            }
+          ]
+        },
+        {
+          "operation_id": "SAFE_VALVE_03_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-002",
+              "processing_time": 22.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "SAFE_VALVE_04",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "安全阀",
+        "route_id": "SAFE_VALVE",
+        "instance_index": 4
+      },
+      "operations": [
+        {
+          "operation_id": "SAFE_VALVE_04_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 32.0
+            }
+          ]
+        },
+        {
+          "operation_id": "SAFE_VALVE_04_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-002",
+              "processing_time": 22.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "SAFE_VALVE_05",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "安全阀",
+        "route_id": "SAFE_VALVE",
+        "instance_index": 5
+      },
+      "operations": [
+        {
+          "operation_id": "SAFE_VALVE_05_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 32.0
+            }
+          ]
+        },
+        {
+          "operation_id": "SAFE_VALVE_05_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-002",
+              "processing_time": 22.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "CHECK_VALVE_01",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "止回阀",
+        "route_id": "CHECK_VALVE",
+        "instance_index": 1
+      },
+      "operations": [
+        {
+          "operation_id": "CHECK_VALVE_01_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 40.0
+            }
+          ]
+        },
+        {
+          "operation_id": "CHECK_VALVE_01_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 48.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "CHECK_VALVE_02",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "止回阀",
+        "route_id": "CHECK_VALVE",
+        "instance_index": 2
+      },
+      "operations": [
+        {
+          "operation_id": "CHECK_VALVE_02_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 40.0
+            }
+          ]
+        },
+        {
+          "operation_id": "CHECK_VALVE_02_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 48.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "CHECK_VALVE_03",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "止回阀",
+        "route_id": "CHECK_VALVE",
+        "instance_index": 3
+      },
+      "operations": [
+        {
+          "operation_id": "CHECK_VALVE_03_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 40.0
+            }
+          ]
+        },
+        {
+          "operation_id": "CHECK_VALVE_03_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 48.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "CHECK_VALVE_04",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "止回阀",
+        "route_id": "CHECK_VALVE",
+        "instance_index": 4
+      },
+      "operations": [
+        {
+          "operation_id": "CHECK_VALVE_04_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 40.0
+            }
+          ]
+        },
+        {
+          "operation_id": "CHECK_VALVE_04_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 48.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job_id": "CHECK_VALVE_05",
+      "release_time": 0.0,
+      "due_time": 9999.0,
+      "initial_location": "RAW",
+      "metadata": {
+        "product_type": "止回阀",
+        "route_id": "CHECK_VALVE",
+        "instance_index": 5
+      },
+      "operations": [
+        {
+          "operation_id": "CHECK_VALVE_05_OP1",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 40.0
+            }
+          ]
+        },
+        {
+          "operation_id": "CHECK_VALVE_05_OP2",
+          "candidate_machines": [
+            {
+              "machine_id": "Y-005",
+              "processing_time": 48.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "simulation_config": {
+    "random_seed": 42,
+    "ppo_max_steps": 5000
+  },
+  "dispatching_config": {
+    "ppo_policy_id": "latest",
+    "transport_rule": "LOAD_BALANCING"
+  },
+  "llm_config": {
+    "use_ollama": false
+  },
+  "return_raw_json": true
+}

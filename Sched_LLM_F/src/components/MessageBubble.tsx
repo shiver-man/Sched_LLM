@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import type { ChatMessage } from "../types";
 
 interface MessageBubbleProps {
@@ -13,8 +14,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       <div className={bubbleClass}>
         {message.contentType === "image" ? (
           <img src={message.content} alt="用户上传图像" className="message-image" />
-        ) : (
+        ) : isUser ? (
           <pre className="message-text">{message.content}</pre>
+        ) : (
+          <div className="markdown-content">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
         )}
       </div>
     </div>

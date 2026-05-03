@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ChatWindow from "./components/ChatWindow";
 import MessageInput from "./components/MessageInput";
 import StatusPanel from "./components/StatusPanel";
-import { createProgressSocket, sendTextToSchedule, uploadImage } from "./api/schedule";
+import { sendTextToSchedule, uploadImage } from "./api/schedule";
 import { initialMessages, initialMetrics } from "./data/mock";
 import { extractScheduleBaseData } from "./utils/extractor";
 import type { ChatMessage, PlanEndpoint, ScheduleBaseData, ScheduleMetrics, UnifiedRunMode } from "./types";
@@ -28,47 +28,48 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [endpoint, setEndpoint] = useState<PlanEndpoint>("/run");
+  const endpoint: PlanEndpoint = "/run";
   const [runMode, setRunMode] = useState<UnifiedRunMode>("compare_all");
   const [ppoPolicyId, setPpoPolicyId] = useState("latest");
+  const [useLlm, setUseLlm] = useState(true);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<ScheduleMetrics | undefined>(initialMetrics);
   const [latestPlan, setLatestPlan] = useState<unknown>(undefined);
+  const [summaryComparison, setSummaryComparison] = useState<unknown>(undefined);
+  const [detailedSchemes, setDetailedSchemes] = useState<unknown>(undefined);
+  const [ganttImage, setGanttImage] = useState<string | undefined>(undefined);
   const [latestBaseData, setLatestBaseData] = useState<ScheduleBaseData | undefined>(undefined);
-  const [socketEnabled, setSocketEnabled] = useState(false);
-  const [socketFeed, setSocketFeed] = useState<string[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    if (!socketEnabled) {
-      socketRef.current?.close();
-      socketRef.current = null;
-      return;
-    }
-    const socket = createProgressSocket((value) => {
-      setSocketFeed((prev) => [...prev.slice(-8), value]);
-    });
-    socketRef.current = socket;
-    return () => socket.close();
-  }, [socketEnabled]);
-
-  const socketPreview = useMemo(() => socketFeed.join("\n"), [socketFeed]);
 
   const handleSendText = async (text: string) => {
     setMessages((prev) => [...prev, createMessage("user", text, "text")]);
     const baseData = extractScheduleBaseData(text);
     setLatestBaseData(baseData);
+    setMetrics(undefined); // 清理旧指标
+    setLatestPlan(undefined); // 清理旧计划
+    setSummaryComparison(undefined); // 清理旧对比
+    setDetailedSchemes(undefined); // 清理旧轨迹
+    setGanttImage(undefined); // 清理旧甘特图
     setLoading(true);
     try {
       const result = await sendTextToSchedule(endpoint, text, baseData, {
         mode: runMode,
-        ppoPolicyId
+        ppoPolicyId,
+        useLlm
       });
       if (result.metrics) {
         setMetrics(result.metrics);
       }
       if (result.plan) {
         setLatestPlan(result.plan);
+      }
+      if (result.summary_comparison) {
+        setSummaryComparison(result.summary_comparison);
+      }
+      if (result.detailed_schemes) {
+        setDetailedSchemes(result.detailed_schemes);
+      }
+      if (result.gantt_chart_base64) {
+        setGanttImage(result.gantt_chart_base64);
       }
       setMessages((prev) => [...prev, createMessage("assistant", result.replyText, "text")]);
     } catch (error) {
@@ -82,6 +83,11 @@ export default function App() {
   const handleUploadImage = async (file: File) => {
     const imageDataUrl = await fileToDataUrl(file);
     setMessages((prev) => [...prev, createMessage("user", imageDataUrl, "image")]);
+    setMetrics(undefined); // 清理旧指标
+    setLatestPlan(undefined); // 清理旧计划
+    setSummaryComparison(undefined); // 清理旧对比
+    setDetailedSchemes(undefined); // 清理旧轨迹
+    setGanttImage(undefined); // 清理旧甘特图
     setLoading(true);
     try {
       const result = await uploadImage(file);
@@ -90,6 +96,15 @@ export default function App() {
       }
       if (result.plan) {
         setLatestPlan(result.plan);
+      }
+      if (result.summary_comparison) {
+        setSummaryComparison(result.summary_comparison);
+      }
+      if (result.detailed_schemes) {
+        setDetailedSchemes(result.detailed_schemes);
+      }
+      if (result.gantt_chart_base64) {
+        setGanttImage(result.gantt_chart_base64);
       }
       setMessages((prev) => [...prev, createMessage("assistant", result.replyText, "text")]);
     } catch (error) {
@@ -107,19 +122,11 @@ export default function App() {
           <h1>Sched_LLM Desktop</h1>
           <div className="toolbar">
             <label className="field-label">
-              调度接口
-              <select value={endpoint} onChange={(event) => setEndpoint(event.target.value as PlanEndpoint)}>
-                <option value="/run">/run (统一多策略实验平台)</option>
-                <option value="/schedule/run">/schedule/run (GA)</option>
-                <option value="/simulation/ppo-plan">/simulation/ppo-plan (PPO)</option>
-              </select>
-            </label>
-            <label className="field-label">
               运行模式
               <select value={runMode} onChange={(event) => setRunMode(event.target.value as UnifiedRunMode)}>
-                <option value="compare_all">compare_all</option>
-                <option value="ppo_plan">ppo_plan</option>
-                <option value="ga_plan">ga_plan</option>
+                <option value="compare_all">多策略对比 (推荐)</option>
+                <option value="ga_only">仅 GA 算法</option>
+                <option value="ppo_only">仅 PPO 算法</option>
               </select>
             </label>
             <label className="field-label">
@@ -132,20 +139,24 @@ export default function App() {
               />
             </label>
             <label className="switch-label">
-              <input
-                type="checkbox"
-                checked={socketEnabled}
-                onChange={(event) => setSocketEnabled(event.target.checked)}
-              />
-              WebSocket 进度
+              <input type="checkbox" checked={useLlm} onChange={(event) => setUseLlm(event.target.checked)} />
+              大模型分析
             </label>
           </div>
         </header>
         <ChatWindow messages={messages} loading={loading} />
         <MessageInput onSendText={handleSendText} onUploadImage={handleUploadImage} disabled={loading} />
-        {socketEnabled ? <pre className="socket-feed">{socketPreview || "等待后端进度消息..."}</pre> : null}
       </section>
-      <StatusPanel metrics={metrics} latestPlan={latestPlan} endpoint={endpoint} latestBaseData={latestBaseData} />
+      <StatusPanel
+        metrics={metrics}
+        latestPlan={latestPlan}
+        summaryComparison={summaryComparison}
+        detailedSchemes={detailedSchemes}
+        ganttImage={ganttImage}
+        endpoint={endpoint}
+        latestBaseData={latestBaseData}
+        loading={loading}
+      />
     </main>
   );
 }

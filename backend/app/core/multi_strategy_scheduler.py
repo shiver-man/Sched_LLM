@@ -45,6 +45,7 @@ class MultiStrategyScheduler:
         
         # 3. 元启发式调度 (Meta-heuristic)
         self.register_strategy("GA", "Meta-heuristic", self._run_ga_strategy)
+        self.register_strategy("TS_GA", "Meta-heuristic", self._run_ga_strategy)
         
         # 4. 数学优化调度 (Math-Optimization)
         self.register_strategy("CP-SAT", "Math-Optimization", self._run_math_strategy)
@@ -98,7 +99,16 @@ class MultiStrategyScheduler:
     def _run_ga_strategy(self, name: str, category: str, ppo_policy_id: str) -> ScheduleScheme:
         """运行遗传算法策略"""
         # GA 内部已经处理了仿真引擎
-        ga = GeneticAlgorithm(self.initial_state, pop_size=50, generations=20)
+        # TS_GA: 先 TS 预优化 OS+MS，再用 GA 做 OS+MS+VS 联合搜索
+        use_tabu_seed = (name == "TS_GA")
+        ga = GeneticAlgorithm(
+            self.initial_state,
+            pop_size=50,
+            generations=20,
+            use_tabu_seed=use_tabu_seed,
+            tabu_iters=30,
+            tabu_tenure=12,
+        )
         result = ga.solve()
         if result["status"] == "success":
             metrics = result.get("metrics", {})
@@ -214,17 +224,33 @@ class MultiStrategyScheduler:
             "objective": "makespan",
             "best_rule": best_scheme.rule,
             "best_metrics": best_scheme.metrics.model_dump(),
-            "best_schedule_plan": [step.model_dump() for step in best_scheme.plan],
+            "best_schedule_plan": [step.model_dump() for step in best_scheme.plan[:10]],
             "is_complete": best_scheme.metrics.is_complete,
             "all_rule_results": [
                 {
                     "rule": s.rule,
                     "metrics": s.metrics.model_dump(),
-                    "plan": [step.model_dump() for step in s.plan]
+                    "plan_summary": f"共 {len(s.plan)} 步"
                 }
                 for s in schemes
             ]
         })
         
-        brief = build_llm_plan_brief(llm_payload)
+        # 核心修复：原来调用的 build_llm_plan_brief 只是本地的模板拼接
+        # 现在我们要真正调用 Ollama 的提示词生成，然后发给大模型
+        try:
+            from app.llm.prompt_builder import build_ollama_plan_prompt
+            from app.llm.ollama_client import OllamaClient
+            from app.config import settings
+            client = OllamaClient(model=settings.ollama_model)
+            prompt = build_ollama_plan_prompt(llm_payload)
+            brief = client.generate(prompt)
+            if not brief or not brief.strip():
+                # 容错：如果大模型挂了，回退到本地模板
+                from app.llm.prompt_builder import build_llm_plan_brief
+                brief = build_llm_plan_brief(llm_payload)
+        except Exception as e:
+            from app.llm.prompt_builder import build_llm_plan_brief
+            brief = build_llm_plan_brief(llm_payload) + f"\n\n[LLM服务未响应: {str(e)}]"
+            
         return status_msg + brief

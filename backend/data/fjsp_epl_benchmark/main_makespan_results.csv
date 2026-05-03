@@ -1,0 +1,11 @@
+group,case,framework_rule,framework_makespan,traditional_rule,traditional_makespan,makespan_improve_pct,framework_is_complete,traditional_is_complete,http_status_full
+Brandimarte,Mk01,COOP_RH,154.0,SPT,141.0,-9.219858156028367,True,True,200
+Brandimarte,Mk02,COOP_RH,104.6667,MWKR,118.0,11.29940677966101,True,True,200
+Brandimarte,Mk03,COOP_RH,414.1667,MWKR,420.8333,1.5841426997340793,True,True,200
+Brandimarte,Mk04,COOP_RH,273.6667,MWKR,271.0,-0.9840221402213991,True,True,200
+Brandimarte,Mk05,COOP_RH,298.1667,MWKR,307.6667,3.087756978574542,True,True,200
+Brandimarte,Mk06,COOP_RH,507.6667,SPT,437.0,-16.170869565217387,True,True,200
+Brandimarte,Mk07,COOP_RH,305.1667,MWKR,315.3333,3.2240806790783014,True,True,200
+Brandimarte,Mk08,COOP_RH,1077.5,MWKR,1109.8333,2.91334743695292,True,True,200
+Brandimarte,Mk09,COOP_RH,813.5,MWKR,889.8333,8.57838204077101,True,True,200
+Brandimarte,Mk10,COOP_RH,789.0,SPT,814.6667,3.1505767941662515,True,True,200

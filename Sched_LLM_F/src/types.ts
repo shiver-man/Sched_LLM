@@ -21,13 +21,27 @@ export interface ScheduleResult {
   plan?: unknown;
   metrics?: ScheduleMetrics;
   raw?: unknown;
+  experience_id?: string;
+  reflection?: string;
+  llm_readable_brief?: string;
+  summary_comparison?: unknown;
+  detailed_schemes?: unknown;
+  gantt_chart_base64?: string;
+}
+
+export interface LLMConfig {
+  use_ollama: boolean;
+}
+
+export interface DispatchingConfig {
+  ppo_policy_id: string;
 }
 
 export interface FactoryInfo {
   factory_id: string;
   factory_name: string;
   planning_horizon: number;
-  current_time: string;
+  current_time: number;
 }
 
 export interface Machine {
@@ -114,8 +128,25 @@ export interface ScheduleBaseData {
   uncertainty_config: UncertaintyConfig;
   source_text: string;
   algorithm_preference?: "GA" | "PPO";
+  llm_config?: LLMConfig;
+  dispatching_config?: DispatchingConfig;
+  return_raw_json?: boolean;
 }
 
 export type UnifiedRunMode = "compare_all" | "ppo_plan" | "ga_plan";
 
-export type PlanEndpoint = "/run" | "/schedule/run" | "/simulation/ppo-plan";
+export interface ReflectionRequest {
+  factory_info: FactoryInfo;
+  shop_floor: ShopFloor;
+  jobs: Job[];
+}
+
+export interface RealtimeEngineRequest extends ScheduleBaseData {
+  perturbation_type?: "breakdown" | "delay" | "new_order";
+}
+
+export interface PPOPlanRequest extends ScheduleBaseData {
+  ppo_policy_id: string;
+}
+
+export type PlanEndpoint = "/run";

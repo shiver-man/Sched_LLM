@@ -153,6 +153,9 @@ class PDR:
         adaptive["eta"] = base_weights["eta"] * _clip(1.0 + 0.8 * busy_v_ratio, 0.7, 2.0)
         adaptive["zeta"] = base_weights["zeta"] * _clip(1.0 + horizon_boost, 0.5, 1.6)
         adaptive["kappa"] = base_weights["kappa"] * _clip(1.0 + 0.2 * idle_m_ratio, 0.8, 1.4)
+        adaptive["theta"] = base_weights["theta"] * _clip(1.0 + 0.3 * (1.0 - idle_m_ratio), 0.7, 1.5)
+        adaptive["iota"] = base_weights["iota"] * _clip(1.0 + 0.2 * (1.0 - idle_m_ratio), 0.8, 1.3)
+        adaptive["lambda"] = base_weights["lambda"] * _clip(1.0 + 0.8 * busy_v_ratio, 0.6, 1.8)
         return adaptive
 
     @staticmethod
@@ -180,6 +183,20 @@ class PDR:
                     continue
 
                 if from_loc == machine["location"]:
+                    # 计算 MWKR (Remaining Work) 和 MOPNR (Remaining Operations)
+                    rest_ops = job["operations"][job["current_op_index"]:]
+                    rem_work = sum(
+                        min(cm["process_time"] for cm in op["candidate_machines"])
+                        for op in rest_ops
+                    )
+                    rem_ops = len(rest_ops)
+
+                    # 计算同步损失惩罚 (Sync Penalty)
+                    m_ready = max(state.get("time", 0.0), machine.get("available_time", 0.0))
+                    # 此处对于无需运输的情况，物料到机时间即为当前时间或工件准备好时间
+                    mat_arrive = max(state.get("time", 0.0), job.get("ready_time", 0.0))
+                    sync_penalty = abs(m_ready - mat_arrive)
+
                     candidates.append(
                         {
                             "job": job,
@@ -192,6 +209,9 @@ class PDR:
                             "downstream_risk": PDR._downstream_risk(state, job, machine),
                             "machine_queue": max(0.0, machine.get("available_time", 0.0) - state.get("time", 0.0)),
                             "empty_run": 0.0,
+                            "remaining_work": rem_work,
+                            "remaining_ops": rem_ops,
+                            "sync_penalty": sync_penalty,
                             "rh_penalty": PDR._rolling_horizon_penalty(
                                 state,
                                 machine["machine_id"],
@@ -204,6 +224,20 @@ class PDR:
                     for vehicle in idle_vehicles:
                         tm = PDR._transport_metrics(state, from_loc, machine["location"], vehicle)
                         t_time = tm["total"]
+                        
+                        # 计算 MWKR 和 MOPNR
+                        rest_ops = job["operations"][job["current_op_index"]:]
+                        rem_work = sum(
+                            min(cm["process_time"] for cm in op["candidate_machines"])
+                            for op in rest_ops
+                        )
+                        rem_ops = len(rest_ops)
+
+                        # 计算同步损失惩罚 (Sync Penalty)
+                        m_ready = max(state.get("time", 0.0), machine.get("available_time", 0.0))
+                        mat_arrive = max(state.get("time", 0.0), job.get("ready_time", 0.0)) + t_time
+                        sync_penalty = abs(m_ready - mat_arrive)
+
                         candidates.append(
                             {
                                 "job": job,
@@ -216,6 +250,9 @@ class PDR:
                                 "downstream_risk": PDR._downstream_risk(state, job, machine),
                                 "machine_queue": max(0.0, machine.get("available_time", 0.0) - state.get("time", 0.0)),
                                 "empty_run": tm["reposition"],
+                                "remaining_work": rem_work,
+                                "remaining_ops": rem_ops,
+                                "sync_penalty": sync_penalty,
                                 "rh_penalty": PDR._rolling_horizon_penalty(
                                     state,
                                     machine["machine_id"],
@@ -243,16 +280,19 @@ class PDR:
             selected = max(candidates, key=remaining_work)
         elif rule in {"COOP", "COOP_RH", "COOP_RH_ADAPT"}:
             weights = state.get("metadata", {}).get("dispatching_config", {}).get("joint_score_weights", {})
-            default_zeta = 0.8 if rule in {"COOP_RH", "COOP_RH_ADAPT"} else 0.4
+            default_zeta = 0.5 if rule in {"COOP_RH", "COOP_RH_ADAPT"} else 0.2
             base_joint_weights = {
-                "alpha": float(weights.get("alpha", 1.0)),
-                "beta": float(weights.get("beta", 1.0)),
-                "gamma": float(weights.get("gamma", 0.6)),
-                "delta": float(weights.get("delta", 0.5)),
-                "epsilon": float(weights.get("epsilon", 0.3)),
-                "eta": float(weights.get("eta", 0.4)),
+                "alpha": float(weights.get("alpha", 1.8)),   # process_time (Stronger SPT)
+                "beta": float(weights.get("beta", 0.05)),   # transport_time (Very low)
+                "gamma": float(weights.get("gamma", 0.1)),
+                "delta": float(weights.get("delta", 0.3)),
+                "epsilon": float(weights.get("epsilon", 1.8)), # machine_queue (Reduce idle)
+                "eta": float(weights.get("eta", 0.05)),
                 "zeta": float(weights.get("zeta", default_zeta)),
-                "kappa": float(weights.get("kappa", 0.9)),
+                "kappa": float(weights.get("kappa", 1.5)),
+                "theta": float(weights.get("theta", 3.0)),   # remaining_work (Very Strong MWKR)
+                "iota": float(weights.get("iota", 1.2)),     # remaining_ops
+                "lambda": float(weights.get("lambda", 1.0)), # sync_penalty
             }
             if rule == "COOP_RH_ADAPT":
                 adaptive_weights = PDR._adaptive_joint_weights(
@@ -263,6 +303,11 @@ class PDR:
                 )
             else:
                 adaptive_weights = base_joint_weights
+            
+            # 预计算 SPT 和 MWKR 的最佳候选，用于给予 Bonus
+            best_spt_val = min(candidates, key=lambda x: x["process_time"])["process_time"]
+            best_mwkr_val = max(candidates, key=lambda x: x["remaining_work"])["remaining_work"]
+            
             alpha = adaptive_weights["alpha"]
             beta = adaptive_weights["beta"]
             gamma = adaptive_weights["gamma"]
@@ -271,9 +316,15 @@ class PDR:
             eta = adaptive_weights["eta"]
             zeta = adaptive_weights["zeta"]
             kappa = adaptive_weights["kappa"]
-            selected = min(
-                candidates,
-                key=lambda x: (
+            theta = adaptive_weights.get("theta", 3.0)
+            iota = adaptive_weights.get("iota", 1.2)
+            lambda_ = adaptive_weights.get("lambda", 1.0)
+            
+            max_rem_work = max((x["remaining_work"] for x in candidates), default=100.0)
+            if max_rem_work == 0: max_rem_work = 1.0
+
+            def calc_score(x):
+                score = (
                     alpha * x["process_time"]
                     + beta * x["transport_time"]
                     + gamma * x["vehicle_wait"]
@@ -281,9 +332,19 @@ class PDR:
                     + epsilon * x["machine_queue"]
                     + eta * x["empty_run"]
                     + zeta * x["rh_penalty"]
+                    + lambda_ * x["sync_penalty"]
                     - kappa * x["rush_bonus"]
-                ),
-            )
+                    - theta * (x["remaining_work"] / max_rem_work * 50.0)
+                    - iota * x["remaining_ops"]
+                )
+                # Rule Bonus: 如果是 SPT 或 MWKR 的最优选，给予额外奖励
+                if x["process_time"] <= best_spt_val:
+                    score -= 10.0
+                if x["remaining_work"] >= best_mwkr_val:
+                    score -= 15.0
+                return score
+
+            selected = min(candidates, key=calc_score)
         else:
             selected = candidates[0]
 

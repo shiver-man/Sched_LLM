@@ -220,7 +220,11 @@ class EventEngine:
             if self.event_queue:
                 event = heapq.heappop(self.event_queue)
                 # 确保时间不倒退，且推进到下一个有意义的时刻
-                self.state["time"] = max(self.state["time"], event.time)
+                prev_t = float(self.state["time"])
+                next_t = max(prev_t, float(event.time))
+                # 在线累计等待时长统计：将 [prev_t, next_t) 区间归因到当前等待类型
+                self._accumulate_idle_reason_durations(prev_t, next_t)
+                self.state["time"] = next_t
                 self._handle_event(event)
                 step += 1
             else:
@@ -272,18 +276,59 @@ class EventEngine:
         }
         return self._apply_dispatch(queued_decision)
 
-    def _track_idle_reasons(self):
-        stats = self.state.setdefault("idle_reason_stats", {"waiting_transport": 0, "waiting_machine": 0, "waiting_repair": 0})
+    def _classify_idle_reasons(self) -> Dict[str, bool]:
         dispatchable = [j for j in get_dispatchable_jobs(self.state) if not j.get("locked", False)]
-        idle_machines = [m for m in self.state["machines"] if m["status"] == "idle"]
         down_machines = [m for m in self.state["machines"] if m["status"] == "down"]
         idle_vehicles = [v for v in self.state["vehicles"] if v.get("status") == "idle"]
-        if down_machines:
-            stats["waiting_repair"] += 1
-        if dispatchable and not idle_machines:
-            stats["waiting_machine"] += 1
-        if dispatchable and idle_machines and (self.state.get("transport_queue") or not idle_vehicles):
-            stats["waiting_transport"] += 1
+        machine_map = {m["machine_id"]: m for m in self.state["machines"]}
+
+        waiting_machine = False
+        waiting_transport = False
+        for job in dispatchable:
+            op_idx = int(job.get("current_op_index", 0))
+            if op_idx >= len(job.get("operations", [])):
+                continue
+            op = job["operations"][op_idx]
+            candidate_ids = [cm.get("machine_id") for cm in op.get("candidate_machines", [])]
+            candidate_machines = [machine_map[mid] for mid in candidate_ids if mid in machine_map]
+            idle_candidates = [m for m in candidate_machines if m.get("status") == "idle"]
+
+            # 该作业当前工序没有任何空闲候选机 -> 机器等待
+            if not idle_candidates:
+                waiting_machine = True
+                continue
+
+            # 存在空闲候选机，但若均不在当前工件位置且无可用运输能力 -> 运输等待
+            current_loc = job.get("current_location")
+            can_start_without_transport = any(m.get("location") == current_loc for m in idle_candidates)
+            if not can_start_without_transport and (self.state.get("transport_queue") or not idle_vehicles):
+                waiting_transport = True
+
+        return {
+            "waiting_repair": bool(down_machines),
+            "waiting_machine": waiting_machine,
+            "waiting_transport": waiting_transport,
+        }
+
+    def _track_idle_reasons(self):
+        stats = self.state.setdefault("idle_reason_stats", {"waiting_transport": 0, "waiting_machine": 0, "waiting_repair": 0})
+        flags = self._classify_idle_reasons()
+        for k, active in flags.items():
+            if active:
+                stats[k] += 1
+
+    def _accumulate_idle_reason_durations(self, start_t: float, end_t: float):
+        delta = max(0.0, float(end_t) - float(start_t))
+        if delta <= 0:
+            return
+        durations = self.state.setdefault(
+            "idle_reason_durations",
+            {"waiting_transport": 0.0, "waiting_machine": 0.0, "waiting_repair": 0.0},
+        )
+        flags = self._classify_idle_reasons()
+        for k, active in flags.items():
+            if active:
+                durations[k] += delta
 
     def _force_release_resources(self):
         """强制检查并释放所有已到达可用时间的资源。"""
